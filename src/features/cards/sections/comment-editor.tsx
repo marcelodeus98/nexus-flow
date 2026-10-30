@@ -1,9 +1,9 @@
 import Mention from '@tiptap/extension-mention'
-import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react'
+import { EditorContent, ReactRenderer, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import type { SuggestionOptions } from '@tiptap/suggestion'
 import { useEffect, useRef } from 'react'
-import { Button } from '@/shared/ui/button'
+import { Button, Group, Stack, Text } from '@mantine/core'
 import { MentionList, type MentionItem, type MentionListHandle } from './mention-list'
 
 type Doc = Record<string, unknown>
@@ -38,7 +38,7 @@ export function CommentEditor({
     extensions: [
       StarterKit,
       Mention.configure({
-        HTMLAttributes: { class: 'rounded bg-primary/10 px-1 font-medium text-primary' },
+        HTMLAttributes: { class: 'rich-text__mention' },
         // The getters run when the user types "@", never during render.
         suggestion: mentionSuggestion(
           // oxlint-disable-next-line react/refs
@@ -51,8 +51,7 @@ export function CommentEditor({
     content: initial ?? '',
     editorProps: {
       attributes: {
-        class:
-          'min-h-16 px-3 py-2 text-sm outline-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:my-1',
+        class: 'rich-text',
         'aria-label': 'Comentário',
       },
       handleKeyDown: (_view, event) => {
@@ -65,6 +64,13 @@ export function CommentEditor({
     },
   })
 
+  // useEditor does not re-render on each keystroke; this does, so the
+  // placeholder goes away as soon as something is typed.
+  const empty = useEditorState({
+    editor,
+    selector: ({ editor: current }) => current?.isEmpty ?? true,
+  })
+
   function submit() {
     if (!editor || editor.isEmpty) return
     onSubmit(editor.getJSON() as Doc)
@@ -72,30 +78,29 @@ export function CommentEditor({
   }
 
   return (
-    <div className="space-y-2">
-      <div
-        ref={wrapper}
-        className="relative rounded-lg border focus-within:ring-2 focus-within:ring-ring/50"
-      >
+    <Stack gap="xs">
+      <div ref={wrapper} className="rich-text-box">
         <EditorContent editor={editor} />
-        {editor?.isEmpty && !initial && (
-          <p className="pointer-events-none absolute top-2 left-3 text-sm text-muted-foreground">
+        {empty && !initial && (
+          <p className="rich-text-box__placeholder">
             Escreva um comentário. Use @ para mencionar alguém.
           </p>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        <Button size="sm" disabled={pending} onClick={submit}>
+      <Group gap="xs">
+        <Button size="xs" loading={pending} onClick={submit}>
           {submitLabel}
         </Button>
         {onCancel && (
-          <Button size="sm" variant="ghost" onClick={onCancel}>
+          <Button size="xs" variant="subtle" color="gray" onClick={onCancel}>
             Cancelar
           </Button>
         )}
-        <span className="text-xs text-muted-foreground">Ctrl+Enter envia</span>
-      </div>
-    </div>
+        <Text size="xs" c="dimmed">
+          Ctrl+Enter envia
+        </Text>
+      </Group>
+    </Stack>
   )
 }
 

@@ -1,31 +1,22 @@
-import { PlusIcon, UsersIcon } from 'lucide-react'
+import {
+  Button,
+  Card,
+  Checkbox,
+  Group,
+  Modal,
+  ScrollArea,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+} from '@mantine/core'
+import { IconPlus, IconUsers } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
-import { toast } from 'sonner'
 import { apiErrorMessage } from '@/shared/api/errors'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
-import { Button } from '@/shared/ui/button'
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Textarea } from '@/shared/ui/textarea'
+import { confirmDanger } from '@/shared/notify/confirm'
+import { toast } from '@/shared/notify/toast'
 import {
   useActiveUsers,
   useDeleteTeam,
@@ -35,7 +26,6 @@ import {
   useTeams,
   type TeamSummary,
 } from './api'
-import { FormField } from './form-field'
 
 export function TeamsPage() {
   const teams = useTeams()
@@ -43,46 +33,56 @@ export function TeamsPage() {
   const [editing, setEditing] = useState<TeamSummary | null | undefined>(undefined)
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
+    <Stack gap="md">
+      <Group justify="space-between" gap="md">
+        <Text size="sm" c="dimmed">
           Times agrupam pessoas para associá-las a projetos de uma vez.
-        </p>
-        <Button onClick={() => setEditing(null)}>
-          <PlusIcon /> Novo time
+        </Text>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing(null)}>
+          Novo time
         </Button>
-      </div>
+      </Group>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
         {teams.data?.map((team) => (
-          <Card key={team.id} size="sm">
-            <CardHeader>
-              <CardTitle>{team.name}</CardTitle>
-              <CardDescription>
-                {team.description && <span className="block">{team.description}</span>}
-                <span className="inline-flex items-center gap-1">
-                  <UsersIcon className="size-3.5" aria-hidden />
-                  {team.memberCount === 1 ? '1 pessoa' : `${team.memberCount} pessoas`}
-                </span>
-              </CardDescription>
-              <CardAction>
-                <Button variant="outline" size="sm" onClick={() => setEditing(team)}>
-                  Gerenciar
-                </Button>
-              </CardAction>
-            </CardHeader>
+          <Card key={team.id} withBorder radius="md" padding="md">
+            <Group justify="space-between" align="flex-start" wrap="nowrap">
+              <Stack gap={4}>
+                <Title order={4}>{team.name}</Title>
+                {team.description && (
+                  <Text size="sm" c="dimmed">
+                    {team.description}
+                  </Text>
+                )}
+                <Group gap={4}>
+                  <IconUsers size={14} aria-hidden color="var(--nexa-slate)" />
+                  <Text size="sm" c="dimmed">
+                    {team.memberCount === 1 ? '1 pessoa' : `${team.memberCount} pessoas`}
+                  </Text>
+                </Group>
+              </Stack>
+              <Button variant="default" size="xs" onClick={() => setEditing(team)}>
+                Gerenciar
+              </Button>
+            </Group>
           </Card>
         ))}
-      </div>
+      </SimpleGrid>
       {teams.isSuccess && teams.data.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">Nenhum time criado ainda.</p>
+        <Text size="sm" c="dimmed" ta="center" py="xl">
+          Nenhum time criado ainda.
+        </Text>
       )}
-      {teams.isError && <p className="text-sm text-destructive">{apiErrorMessage(teams.error)}</p>}
+      {teams.isError && (
+        <Text size="sm" c="red">
+          {apiErrorMessage(teams.error)}
+        </Text>
+      )}
 
       {editing !== undefined && (
         <TeamDialog teamId={editing?.id} onClose={() => setEditing(undefined)} />
       )}
-    </div>
+    </Stack>
   )
 }
 
@@ -133,109 +133,92 @@ function TeamDialog({ teamId, onClose }: { teamId?: string; onClose: () => void 
 
   const pending = save.isPending || setMembers.isPending
 
+  function confirmDelete(id: string) {
+    confirmDanger({
+      title: `Excluir ${currentName}?`,
+      message: 'As pessoas continuam no sistema; só o agrupamento é removido.',
+      onConfirm: () =>
+        remove.mutate(id, {
+          onSuccess: () => {
+            toast.success('Time excluído.')
+            onClose()
+          },
+          onError: (error) => toast.error(apiErrorMessage(error)),
+        }),
+    })
+  }
+
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={(event) => void submit(event)} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>{teamId ? 'Gerenciar time' : 'Novo time'}</DialogTitle>
-            {teamId && team.isPending && <DialogDescription>Carregando…</DialogDescription>}
-          </DialogHeader>
-          <FormField label="Nome">
-            <Input
-              value={currentName}
-              onChange={(e) => setName(e.target.value)}
-              minLength={2}
-              maxLength={80}
-              required
-            />
-          </FormField>
-          <FormField label="Descrição">
-            <Textarea
-              value={currentDescription}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={500}
-              rows={2}
-            />
-          </FormField>
+    <Modal opened onClose={onClose} title={teamId ? 'Gerenciar time' : 'Novo time'} size="lg">
+      <Stack component="form" gap="md" onSubmit={(event) => void submit(event)}>
+        {teamId && team.isPending && (
+          <Text size="sm" c="dimmed">
+            Carregando…
+          </Text>
+        )}
+        <TextInput
+          label="Nome"
+          value={currentName}
+          onChange={(e) => setName(e.target.value)}
+          minLength={2}
+          maxLength={80}
+          required
+        />
+        <Textarea
+          label="Descrição"
+          value={currentDescription}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={500}
+          autosize
+          minRows={2}
+        />
 
-          {teamId && (
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Membros ({currentMembers.size})</legend>
-              <Input
-                type="search"
-                placeholder="Filtrar pessoas"
-                aria-label="Filtrar pessoas"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              />
-              <ul className="max-h-64 space-y-1 overflow-y-auto rounded-lg border p-2">
+        {teamId && (
+          <Stack gap="xs" component="fieldset" style={{ border: 0, padding: 0, margin: 0 }}>
+            <Text component="legend" size="sm" fw={500}>
+              Membros ({currentMembers.size})
+            </Text>
+            <TextInput
+              type="search"
+              placeholder="Filtrar pessoas"
+              aria-label="Filtrar pessoas"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+            <ScrollArea.Autosize mah={256} type="auto">
+              <Stack gap={6} p="xs">
                 {visibleUsers.map((user) => (
-                  <li key={user.id}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted">
-                      <Checkbox
-                        checked={currentMembers.has(user.id)}
-                        onCheckedChange={(checked) => toggle(user.id, checked === true)}
-                      />
-                      <span className="text-sm">
-                        {user.name}
-                        <span className="block text-xs text-muted-foreground">{user.email}</span>
-                      </span>
-                    </label>
-                  </li>
+                  <Checkbox
+                    key={user.id}
+                    checked={currentMembers.has(user.id)}
+                    onChange={(e) => toggle(user.id, e.currentTarget.checked)}
+                    label={user.name}
+                    description={user.email}
+                  />
                 ))}
-              </ul>
-            </fieldset>
-          )}
+              </Stack>
+            </ScrollArea.Autosize>
+          </Stack>
+        )}
 
-          <DialogFooter className="sm:justify-between">
-            {teamId ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button type="button" variant="destructive">
-                    Excluir time
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir {currentName}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      As pessoas continuam no sistema; só o agrupamento é removido.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() =>
-                        remove.mutate(teamId, {
-                          onSuccess: () => {
-                            toast.success('Time excluído.')
-                            onClose()
-                          },
-                          onError: (error) => toast.error(apiErrorMessage(error)),
-                        })
-                      }
-                    >
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={pending || (Boolean(teamId) && team.isPending)}>
-                {pending ? 'Salvando…' : 'Salvar'}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <Group justify="space-between" mt="sm">
+          {teamId ? (
+            <Button variant="light" color="red" onClick={() => confirmDelete(teamId)}>
+              Excluir time
+            </Button>
+          ) : (
+            <span />
+          )}
+          <Group gap="xs">
+            <Button variant="default" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={pending} disabled={Boolean(teamId) && team.isPending}>
+              Salvar
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

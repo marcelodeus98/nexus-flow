@@ -1,10 +1,8 @@
+import { Button, Code, Paper, Select, Stack, Table, Text } from '@mantine/core'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 type Entry = {
   id: string
@@ -26,7 +24,7 @@ const actionGroups: Record<string, string> = {
   'time.': 'Tempo',
   'sprint.': 'Sprints',
   'column.': 'Colunas',
-  'board.': 'Regras do board',
+  'board.': 'Boards e regras',
   'comment.': 'Comentários',
   'attachment.': 'Anexos',
   'department.': 'Departamentos',
@@ -54,76 +52,93 @@ export function AuditLog({ source }: { source: string }) {
   const rows = log.data?.pages.flatMap((page) => page.items) ?? []
 
   return (
-    <div className="space-y-3">
-      <Select value={action} onValueChange={setAction}>
-        <SelectTrigger className="w-64 bg-background" aria-label="Tipo de ação">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Todas as ações</SelectItem>
-          {Object.entries(actionGroups).map(([prefix, label]) => (
-            <SelectItem key={prefix} value={prefix}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="rounded-lg border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-36">Quando</TableHead>
-              <TableHead>Quem</TableHead>
-              <TableHead>Ação</TableHead>
-              <TableHead>Detalhes</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+    <Stack gap="sm">
+      <Select
+        aria-label="Tipo de ação"
+        w={256}
+        value={action}
+        onChange={(value) => setAction(value ?? ALL)}
+        allowDeselect={false}
+        data={[
+          { value: ALL, label: 'Todas as ações' },
+          ...Object.entries(actionGroups).map(([value, label]) => ({ value, label })),
+        ]}
+      />
+      <Paper withBorder radius="md">
+        <Table verticalSpacing="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={144}>Quando</Table.Th>
+              <Table.Th>Quem</Table.Th>
+              <Table.Th>Ação</Table.Th>
+              <Table.Th>Detalhes</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {rows.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                  {new Date(entry.createdAt).toLocaleString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </TableCell>
-                <TableCell>
-                  {entry.actor?.name ?? (entry.actor ? 'Pessoa removida' : 'Sistema')}
+              <Table.Tr key={entry.id}>
+                <Table.Td>
+                  <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(entry.createdAt).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">
+                    {entry.actor?.name ?? (entry.actor ? 'Pessoa removida' : 'Sistema')}
+                  </Text>
                   {entry.ip && (
-                    <span className="block text-xs text-muted-foreground">{entry.ip}</span>
+                    <Text size="xs" c="dimmed">
+                      {entry.ip}
+                    </Text>
                   )}
-                </TableCell>
-                <TableCell className="font-mono text-xs">{entry.action}</TableCell>
-                <TableCell className="max-w-96">
-                  <code className="line-clamp-2 text-xs break-all text-muted-foreground">
-                    {entry.metadata ? JSON.stringify(entry.metadata) : '—'}
-                  </code>
-                </TableCell>
-              </TableRow>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs" ff="monospace">
+                    {entry.action}
+                  </Text>
+                </Table.Td>
+                <Table.Td maw={384}>
+                  <Code c="dimmed" style={{ wordBreak: 'break-all' }}>
+                    <Text span size="xs" lineClamp={2}>
+                      {entry.metadata ? JSON.stringify(entry.metadata) : '—'}
+                    </Text>
+                  </Code>
+                </Table.Td>
+              </Table.Tr>
             ))}
             {log.isSuccess && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  Nada registrado.
-                </TableCell>
-              </TableRow>
+              <Table.Tr>
+                <Table.Td colSpan={4}>
+                  <Text size="sm" c="dimmed" ta="center" py="lg">
+                    Nada registrado.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
             )}
-          </TableBody>
+          </Table.Tbody>
         </Table>
-      </div>
-      {log.isError && <p className="text-sm text-destructive">{apiErrorMessage(log.error)}</p>}
+      </Paper>
+      {log.isError && (
+        <Text size="sm" c="red">
+          {apiErrorMessage(log.error)}
+        </Text>
+      )}
       {log.hasNextPage && (
         <Button
-          variant="outline"
-          disabled={log.isFetchingNextPage}
+          variant="default"
+          w="fit-content"
+          loading={log.isFetchingNextPage}
           onClick={() => void log.fetchNextPage()}
         >
           Carregar mais
         </Button>
       )}
-    </div>
+    </Stack>
   )
 }

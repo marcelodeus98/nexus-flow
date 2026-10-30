@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { http } from '@/shared/api/http'
+import { http, type HttpInit } from '@/shared/api/http'
 
 export type Methodology = 'SCRUM' | 'KANBAN' | 'HYBRID'
 export type EstimateView = 'POINTS' | 'HOURS'
@@ -75,7 +75,7 @@ export const projectKeys = {
   members: (projectId: string) => ['projects', projectId, 'members'] as const,
 }
 
-const json = (method: string, body: unknown): RequestInit => ({
+const json = (method: string, body: unknown): HttpInit => ({
   method,
   body: JSON.stringify(body),
 })
@@ -124,6 +124,7 @@ export function useCreateProject() {
       description?: string
       methodology: Methodology
       defaultEstimateView: EstimateView
+      qaFlow?: boolean
     }) => http<Project>('/projects', json('POST', input)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
   })

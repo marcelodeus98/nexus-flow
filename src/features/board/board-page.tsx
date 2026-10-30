@@ -14,15 +14,15 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMemo, useState } from 'react'
-import { Link, Outlet } from 'react-router'
-import { toast } from 'sonner'
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Group, Select, Stack, Text } from '@mantine/core'
+import { toast } from '@/shared/notify/toast'
 import { useCan, useProjectMembers } from '@/features/projects/api'
 import { useCurrentProject } from '@/features/projects/project-context'
 import { formatDay, useSprints } from '@/features/sprints/api'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { useSessionState } from '@/shared/auth/session-store'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { useBoard, useMoveCard, useTags, type CardSummary } from './api'
+import { boardKeys, useBoard, useBoards, useMoveCard, useTags, type CardSummary } from './api'
 import { CardFace, type CardLookups } from './board-card'
 import { moveErrorMessage } from './move-errors'
 import { matchesFilter, useBoardFilter } from './board-filter'
@@ -42,12 +42,18 @@ const collisionDetection: CollisionDetection = (args) => {
 
 export function BoardPage() {
   const project = useCurrentProject()
-  const board = useBoard(project.id)
+  const navigate = useNavigate()
+  // /p/KEY/b/:boardId, or the default board on /p/KEY.
+  const boardId = useParams().boardId ?? project.defaultBoardId
+  const boards = useBoards(project.id)
+  const board = useBoard(project.id, boardId)
   const tags = useTags(project.id)
   const members = useProjectMembers(project.id)
   const can = useCan(project.key)
   const readOnly = project.status === 'ARCHIVED'
-  const moveCard = useMoveCard(project.id, (error) => toast.error(moveErrorMessage(error)))
+  const moveCard = useMoveCard(project.id, boardKeys.board(project.id, boardId ?? ''), (error) =>
+    toast.error(moveErrorMessage(error)),
+  )
 
   // While dragging: the order the user sees, column by column.
   const [dragging, setDragging] = useState<{ cardId: string; placement: Placement } | null>(null)
@@ -88,7 +94,8 @@ export function BoardPage() {
   for (const column of board.data?.columns ?? []) placementFromCache[column.id] = []
   for (const card of board.data?.cards ?? []) {
     // undefined: no filter; null: no active sprint, so nothing to show.
-    if (sprintFilter !== undefined && card.sprintId !== sprintFilter) continue
+    if (sprintFilter === null || (sprintFilter !== undefined && card.sprintId !== sprintFilter))
+      continue
     if (filtering && !matchesFilter(card, filter, { userId, today })) continue
     placementFromCache[card.columnId]?.push(card.id)
   }
@@ -152,65 +159,105 @@ export function BoardPage() {
     moveCard({ cardId, columnId, afterId, beforeId })
   }
 
-  if (board.isPending) return <p className="text-sm text-muted-foreground">Carregando board…</p>
+  if (board.isPending)
+    return (
+      <Text size="sm" c="dimmed">
+        Carregando board…
+      </Text>
+    )
   if (board.isError)
-    return <p className="text-sm text-destructive">{apiErrorMessage(board.error)}</p>
+    return (
+      <Text size="sm" c="red">
+        {apiErrorMessage(board.error, { 404: 'Board não encontrado.' })}{' '}
+        <Link to={`/p/${project.key}`} className="text-link">
+          Abrir o board padrão
+        </Link>
+      </Text>
+    )
 
   const { columns } = board.data
-  const visibleMobileColumn = mobileColumnId ?? columns[0]?.id
+  // Switching boards keeps the page mounted: fall back to the first column.
+  const visibleMobileColumn = columns.some((column) => column.id === mobileColumnId)
+    ? mobileColumnId
+    : columns[0]?.id
+  const boardList = boards.data ?? []
   const activeCard = dragging ? cardsById.get(dragging.cardId) : undefined
   const cardsIn = (columnId: string) =>
     placement[columnId].flatMap((id) => cardsById.get(id) ?? []) as CardSummary[]
 
   return (
     <>
-      {usesSprints && (
-        <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
-          <Select value={scope} onValueChange={(value) => setScope(value as 'sprint' | 'all')}>
-            <SelectTrigger size="sm" className="w-48 bg-background" aria-label="Cards exibidos">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sprint">Sprint ativa</SelectItem>
-              <SelectItem value="all">Todos os cards</SelectItem>
-            </SelectContent>
-          </Select>
-          {scope === 'sprint' &&
-            (activeSprint ? (
-              <span className="text-muted-foreground">
-                {activeSprint.name} · {formatDay(activeSprint.startDate)} a{' '}
-                {formatDay(activeSprint.endDate)}
-                {activeSprint.goal && ` · ${activeSprint.goal}`}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">
-                Nenhuma sprint em andamento.{' '}
-                <Link to={`/p/${project.key}/backlog`} className="underline">
-                  Planeje no backlog
-                </Link>
-                .
-              </span>
-            ))}
-        </div>
-      )}
-      <div className="mb-3">
+      <Stack gap="sm" mb="sm">
+        {(boardList.length > 1 || usesSprints) && (
+          <Group gap="md">
+            {boardList.length > 1 && (
+              <Select
+                size="xs"
+                w={220}
+                aria-label="Board"
+                value={board.data.board.id}
+                onChange={(id) =>
+                  id &&
+                  navigate(
+                    boardList.find((b) => b.id === id)?.isDefault
+                      ? `/p/${project.key}`
+                      : `/p/${project.key}/b/${id}`,
+                  )
+                }
+                allowDeselect={false}
+                data={boardList.map((b) => ({
+                  value: b.id,
+                  label: b.isDefault ? `${b.name} (padrão)` : b.name,
+                }))}
+              />
+            )}
+            {usesSprints && (
+              <Select
+                size="xs"
+                w={180}
+                aria-label="Cards exibidos"
+                value={scope}
+                onChange={(value) => value && setScope(value as 'sprint' | 'all')}
+                allowDeselect={false}
+                data={[
+                  { value: 'sprint', label: 'Sprint ativa' },
+                  { value: 'all', label: 'Todos os cards' },
+                ]}
+              />
+            )}
+            {usesSprints &&
+              scope === 'sprint' &&
+              (activeSprint ? (
+                <Text size="sm" c="dimmed">
+                  {activeSprint.name} · {formatDay(activeSprint.startDate)} a{' '}
+                  {formatDay(activeSprint.endDate)}
+                  {activeSprint.goal && ` · ${activeSprint.goal}`}
+                </Text>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  Nenhuma sprint em andamento.{' '}
+                  <Link to={`/p/${project.key}/backlog`} className="text-link">
+                    Planeje no backlog
+                  </Link>
+                  .
+                </Text>
+              ))}
+          </Group>
+        )}
         <BoardFilters members={members.data?.members ?? []} tags={tags.data ?? []} />
-      </div>
-      {/* Phones show one column at a time. */}
-      <div className="md:hidden">
-        <Select value={visibleMobileColumn} onValueChange={setMobileColumnId}>
-          <SelectTrigger className="w-full bg-background" aria-label="Coluna">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {columns.map((column) => (
-              <SelectItem key={column.id} value={column.id}>
-                {column.name} ({placement[column.id].length})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        {/* Phones show one column at a time. */}
+        <Select
+          hiddenFrom="sm"
+          aria-label="Coluna"
+          value={visibleMobileColumn ?? null}
+          onChange={(id) => id && setMobileColumnId(id)}
+          allowDeselect={false}
+          data={columns.map((column) => ({
+            value: column.id,
+            label: `${column.name} (${placement[column.id].length})`,
+          }))}
+        />
+      </Stack>
 
       <DndContext
         sensors={sensors}
@@ -220,7 +267,7 @@ export function BoardPage() {
         onDragEnd={onDragEnd}
         onDragCancel={() => setDragging(null)}
       >
-        <div className="flex h-[calc(100dvh-14rem)] gap-3 overflow-x-auto pb-2">
+        <div className="board">
           {columns.map((column) => (
             <BoardColumn
               key={column.id}
@@ -230,15 +277,13 @@ export function BoardPage() {
               lookups={lookups}
               canCreate={!readOnly && can('card:create')}
               canMove={!readOnly && can('card:move')}
-              className={`w-full shrink-0 md:w-72 ${
-                column.id === visibleMobileColumn ? '' : 'max-md:hidden'
-              }`}
+              className={column.id === visibleMobileColumn ? '' : 'board-column--mobile-hidden'}
             />
           ))}
         </div>
         <DragOverlay>
           {activeCard && (
-            <div className="w-72 rotate-2 cursor-grabbing">
+            <div className="board-card__overlay">
               <CardFace card={activeCard} lookups={lookups} />
             </div>
           )}

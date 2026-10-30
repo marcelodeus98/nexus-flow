@@ -1,11 +1,12 @@
-import { PauseIcon, PlayIcon, SquareIcon } from 'lucide-react'
-import { Link } from 'react-router'
-import { toast } from 'sonner'
+import { ActionIcon, Anchor, Group, Text } from '@mantine/core'
+import { IconPlayerPause, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-react'
+import { Link } from 'react-router-dom'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Button } from '@/shared/ui/button'
+import { toast } from '@/shared/notify/toast'
 import { formatDuration, useElapsed, useTimer, useTimerActions } from './api'
+import './timer-widget.css'
 
-// Header timer: the running card with its elapsed time, or the paused card
+// Top bar timer: the running card with its elapsed time, or the paused card
 // with a resume button. Nothing when neither exists.
 export function TimerWidget() {
   const timer = useTimer()
@@ -19,56 +20,61 @@ export function TimerWidget() {
   if (!card) return null
 
   return (
-    <div
-      className={`flex items-center gap-1 rounded-full border py-0.5 pr-0.5 pl-3 text-sm ${
-        running ? 'border-emerald-600/40 bg-emerald-600/10' : 'bg-muted'
-      }`}
+    <Group
+      gap={4}
+      wrap="nowrap"
+      className={`timer-widget${running ? ' timer-widget--running' : ''}`}
       role="timer"
       aria-label={running ? 'Timer em andamento' : 'Timer pausado'}
     >
-      <Link
+      <Anchor
+        component={Link}
         to={`/p/${card.projectKey}/c/${card.number}`}
-        className="max-w-48 truncate hover:underline"
+        className="timer-widget__card"
         title={card.title}
+        c="inherit"
       >
-        <span className="font-mono text-xs text-muted-foreground">
+        <Text span ff="monospace" size="xs" c="dimmed">
           {card.projectKey}-{card.number}
-        </span>{' '}
+        </Text>{' '}
         {card.title}
-      </Link>
+      </Anchor>
       {running && (
-        <span className="ml-1 font-mono tabular-nums">{formatDuration(elapsed, true)}</span>
+        <Text span ff="monospace" size="sm" ml={4}>
+          {formatDuration(elapsed, true)}
+        </Text>
       )}
       {running ? (
-        <Button
-          variant="ghost"
-          size="icon-xs"
+        <ActionIcon
+          variant="subtle"
+          size="sm"
           aria-label="Pausar timer"
           disabled={pause.isPending}
           onClick={() => pause.mutate(undefined, { onError })}
         >
-          <PauseIcon />
-        </Button>
+          <IconPlayerPause size={16} />
+        </ActionIcon>
       ) : (
-        <Button
-          variant="ghost"
-          size="icon-xs"
+        <ActionIcon
+          variant="subtle"
+          size="sm"
           aria-label="Retomar timer"
           disabled={start.isPending}
           onClick={() => start.mutate(card.id, { onError })}
         >
-          <PlayIcon />
-        </Button>
+          <IconPlayerPlay size={16} />
+        </ActionIcon>
       )}
-      <Button
-        variant="ghost"
-        size="icon-xs"
+      <ActionIcon
+        variant="subtle"
+        size="sm"
+        color="gray"
         aria-label="Parar timer"
         disabled={stop.isPending}
         onClick={() => stop.mutate(undefined, { onError })}
       >
-        <SquareIcon />
-      </Button>
-    </div>
+        <IconPlayerStop size={16} />
+      </ActionIcon>
+    </Group>
   )
 }

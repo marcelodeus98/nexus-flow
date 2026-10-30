@@ -1,8 +1,16 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
 import { generateKeyBetween } from 'fractional-indexing'
-import { http } from '@/shared/api/http'
+import type { BugSeverity } from '@/features/qa/bug-severity'
+import { http, type HttpInit } from '@/shared/api/http'
 
-export type ColumnCategory = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'BLOCKED'
+export type ColumnCategory =
+  'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'TESTING' | 'DONE' | 'BLOCKED'
 export type CardPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 export type CardDepartmentRole = 'ORIGIN' | 'TARGET' | 'INVOLVED'
 
@@ -11,6 +19,7 @@ export const categoryLabels: Record<ColumnCategory, string> = {
   TODO: 'A fazer',
   IN_PROGRESS: 'Em andamento',
   REVIEW: 'Revisão',
+  TESTING: 'Em teste',
   DONE: 'Concluído',
   BLOCKED: 'Bloqueado',
 }
@@ -42,6 +51,11 @@ export type CardSummary = {
   rank: string
   sprintId: string | null
   parentId: string | null
+  type: 'TASK' | 'BUG'
+  bugSeverity: BugSeverity | null
+  // Last QA verdict (null: never reviewed) and how many times QA sent it back.
+  qaStatus: 'APPROVED' | 'REJECTED' | null
+  rejectionCount: number
   version: number
   updatedAt: string
   assigneeIds: string[]
@@ -51,28 +65,60 @@ export type CardSummary = {
   checklistDone: number
 }
 
+export type BoardInfo = { id: string; name: string; isDefault: boolean }
+
 export type Board = {
   board: { id: string; name: string }
   columns: BoardColumn[]
   cards: CardSummary[]
 }
 
+// Every board of the project at once (backlog and sprint planning).
+export type BoardOverview = {
+  boards: BoardInfo[]
+  columns: (BoardColumn & { boardId: string })[]
+  cards: CardSummary[]
+}
+
+// What the card caches below have in common: a board or the overview.
+type CardList = { columns: { id: string }[]; cards: CardSummary[] }
+
 export type Tag = { id: string; name: string; color: string; projectId: string | null }
 
+// Every cached board of a project (and its overview) lives under
+// ['board', projectId], so card events update them all in one pass.
 export const boardKeys = {
-  board: (projectId: string) => ['board', projectId] as const,
+  all: (projectId: string) => ['board', projectId] as const,
+  board: (projectId: string, boardId: string) => ['board', projectId, boardId] as const,
+  overview: (projectId: string) => ['board', projectId, 'all'] as const,
+  list: (projectId: string) => ['boards', projectId] as const,
   tags: (projectId: string) => ['tags', projectId] as const,
 }
 
-const json = (method: string, body: unknown): RequestInit => ({
+const json = (method: string, body: unknown): HttpInit => ({
   method,
   body: JSON.stringify(body),
 })
 
-export function useBoard(projectId: string) {
+export function useBoards(projectId: string) {
   return useQuery({
-    queryKey: boardKeys.board(projectId),
-    queryFn: () => http<Board>(`/projects/${projectId}/board`),
+    queryKey: boardKeys.list(projectId),
+    queryFn: () => http<BoardInfo[]>(`/projects/${projectId}/boards`),
+  })
+}
+
+export function useBoard(projectId: string, boardId: string | null | undefined) {
+  return useQuery({
+    queryKey: boardKeys.board(projectId, boardId ?? ''),
+    queryFn: () => http<Board>(`/boards/${boardId}`),
+    enabled: Boolean(boardId),
+  })
+}
+
+export function useBoardOverview(projectId: string) {
+  return useQuery({
+    queryKey: boardKeys.overview(projectId),
+    queryFn: () => http<BoardOverview>(`/projects/${projectId}/boards/all`),
   })
 }
 
@@ -89,23 +135,28 @@ export function useTags(projectId: string) {
 export const byRank = (a: { rank: string; id: string }, b: { rank: string; id: string }) =>
   a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : a.id < b.id ? -1 : 1
 
-// A socket event or a mutation result. Older versions than what the cache
-// holds are dropped, so a late echo never undoes a newer change.
+// A socket event or a mutation result, applied to every cached board of the
+// project: the card goes where its column is and leaves the boards it is no
+// longer on (a move to another board). Older versions than what a cache holds
+// are dropped, so a late echo never undoes a newer change.
 export function upsertCard(queryClient: QueryClient, projectId: string, card: CardSummary) {
-  queryClient.setQueryData<Board>(boardKeys.board(projectId), (board) => {
-    if (!board) return board
-    const current = board.cards.find((c) => c.id === card.id)
-    if (current && current.version > card.version) return board
+  queryClient.setQueriesData<CardList>({ queryKey: boardKeys.all(projectId) }, (list) => {
+    if (!list) return list
+    const current = list.cards.find((c) => c.id === card.id)
+    if (current && current.version > card.version) return list
+    if (!list.columns.some((column) => column.id === card.columnId)) {
+      return current ? { ...list, cards: list.cards.filter((c) => c.id !== card.id) } : list
+    }
     const cards = current
-      ? board.cards.map((c) => (c.id === card.id ? card : c))
-      : [...board.cards, card]
-    return { ...board, cards: cards.sort(byRank) }
+      ? list.cards.map((c) => (c.id === card.id ? card : c))
+      : [...list.cards, card]
+    return { ...list, cards: cards.sort(byRank) }
   })
 }
 
 export function removeCard(queryClient: QueryClient, projectId: string, cardId: string) {
-  queryClient.setQueryData<Board>(boardKeys.board(projectId), (board) =>
-    board ? { ...board, cards: board.cards.filter((c) => c.id !== cardId) } : board,
+  queryClient.setQueriesData<CardList>({ queryKey: boardKeys.all(projectId) }, (list) =>
+    list ? { ...list, cards: list.cards.filter((c) => c.id !== cardId) } : list,
   )
 }
 
@@ -119,23 +170,23 @@ export type MoveInput = {
 // The card jumps at once, with a provisional rank between its new neighbours
 // (same algorithm as the API, so it usually matches). The cache is updated
 // synchronously, before the request, so the dropped card never flickers back.
-// On failure the server's board is restored and `onError` gets the error.
-export function useMoveCard(projectId: string, onError: (error: unknown) => void) {
+// On failure the server's boards are restored and `onError` gets the error.
+// `key` is the cache shown while dragging (a board, or the overview).
+export function useMoveCard(projectId: string, key: QueryKey, onError: (error: unknown) => void) {
   const queryClient = useQueryClient()
-  const key = boardKeys.board(projectId)
   const mutation = useMutation({
     mutationFn: ({ cardId, ...body }: MoveInput) =>
       http<CardSummary>(`/cards/${cardId}/move`, json('POST', body)),
     onSuccess: (card) => upsertCard(queryClient, projectId, card),
     onError: (error) => {
       onError(error)
-      return queryClient.invalidateQueries({ queryKey: key })
+      return queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) })
     },
   })
 
   return (input: MoveInput) => {
     void queryClient.cancelQueries({ queryKey: key })
-    queryClient.setQueryData<Board>(key, (board) => {
+    queryClient.setQueryData<CardList>(key, (board) => {
       if (!board) return board
       const { cardId, columnId, afterId, beforeId } = input
       const rankOf = (id?: string) => board.cards.find((c) => c.id === id)?.rank ?? null
@@ -158,10 +209,29 @@ export function useMoveCard(projectId: string, onError: (error: unknown) => void
   }
 }
 
+export function useSaveBoard(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id?: string; name?: string; isDefault?: true }) =>
+      id
+        ? http<BoardInfo>(`/boards/${id}`, json('PATCH', body))
+        : http<BoardInfo>(`/projects/${projectId}/boards`, json('POST', body)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: boardKeys.list(projectId) }),
+  })
+}
+
+export function useDeleteBoard(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => http<void>(`/boards/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: boardKeys.list(projectId) }),
+  })
+}
+
 export function useCreateCard(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { title: string; columnId: string }) =>
+    mutationFn: (input: { title: string; columnId: string; type?: 'TASK' | 'BUG' }) =>
       http<CardSummary>(`/projects/${projectId}/cards`, json('POST', input)),
     onSuccess: (card) => upsertCard(queryClient, projectId, card),
   })

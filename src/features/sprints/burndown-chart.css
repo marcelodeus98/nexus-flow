@@ -1,0 +1,124 @@
+/* Burndown: own SVG; colors from the Nexa tokens (--series-1 etc.). */
+.burndown {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.burndown__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--nexa-slate);
+}
+
+.burndown__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--nexa-slate);
+}
+
+.burndown__legend > span,
+.burndown__tooltip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.burndown__swatch {
+  display: inline-block;
+  width: 1rem;
+}
+
+.burndown__swatch--actual {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--series-1);
+}
+
+.burndown__swatch--ideal {
+  height: 1px;
+  background: var(--chart-reference);
+}
+
+.burndown__plot {
+  position: relative;
+  border-radius: 0.5rem;
+  outline: none;
+}
+
+.burndown__plot:focus-visible {
+  box-shadow: 0 0 0 2px var(--nexa-teal-100);
+}
+
+.burndown__svg {
+  display: block;
+  overflow: visible;
+}
+
+.burndown__axis {
+  fill: var(--nexa-slate);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.burndown__value {
+  fill: var(--nexa-navy);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.burndown__tooltip {
+  position: absolute;
+  top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--nexa-border);
+  border-radius: 0.375rem;
+  background: #ffffff;
+  font-size: 0.75rem;
+  pointer-events: none;
+  box-shadow: var(--mantine-shadow-md);
+}
+
+.burndown__tooltip p {
+  margin: 0;
+}
+
+.burndown__tooltip-title {
+  margin-bottom: 0.25rem !important;
+  font-weight: 600;
+}
+
+.burndown__tooltip-row span:last-child {
+  color: var(--nexa-slate);
+}
+
+.burndown__table {
+  font-size: 0.875rem;
+}
+
+.burndown__table summary {
+  cursor: pointer;
+  color: var(--nexa-slate);
+}
+
+.burndown__table table {
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.burndown__table th {
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--nexa-slate);
+}
+
+.burndown__table td {
+  padding: 0.25rem 0;
+  border-top: 1px solid var(--nexa-border);
+}

@@ -3,11 +3,21 @@ import { ApiError } from '@/shared/api/http'
 import { apiErrorMessage } from '@/shared/api/errors'
 
 type RuleFailure = {
-  type: 'CHECKLIST_COMPLETE' | 'REQUIRED_FIELDS' | 'ROLE_REQUIRED' | 'WIP_LIMIT'
+  type:
+    | 'CHECKLIST_COMPLETE'
+    | 'REQUIRED_FIELDS'
+    | 'ROLE_REQUIRED'
+    | 'WIP_LIMIT'
+    | 'QA_APPROVED'
+    | 'NO_OPEN_BUGS'
+    | 'TESTS_PASSED'
   missingFields?: string[]
   checklistKind?: 'QA' | 'GENERAL' | null
   roles?: ProjectRole[]
   wipLimit?: number
+  openBugs?: number[]
+  attachedTests?: number
+  pendingTests?: number
 }
 
 export const requirableFieldLabels: Record<string, string> = {
@@ -34,6 +44,16 @@ function describe(failure: RuleFailure): string {
       return `Só ${(failure.roles ?? []).map((role) => roleLabels[role]).join(' ou ')} pode mover para esta coluna.`
     case 'WIP_LIMIT':
       return `A coluna já está no limite de ${failure.wipLimit} cards.`
+    case 'QA_APPROVED':
+      return 'O card precisa ser aprovado pelo QA.'
+    case 'NO_OPEN_BUGS': {
+      const bugs = failure.openBugs ?? []
+      return `Há ${bugs.length === 1 ? 'um bug aberto' : `${bugs.length} bugs abertos`} encontrado(s) neste card (nº ${bugs.join(', ')}).`
+    }
+    case 'TESTS_PASSED':
+      return failure.attachedTests
+        ? `Faltam ${failure.pendingTests} caso(s) de teste passar nesta rodada.`
+        : 'Anexe e execute os casos de teste do card.'
   }
 }
 

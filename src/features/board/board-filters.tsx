@@ -1,11 +1,10 @@
-import { SearchIcon, XIcon } from 'lucide-react'
+import { Button, Group, Select, TextInput } from '@mantine/core'
+import { IconSearch, IconX } from '@tabler/icons-react'
 import { useDepartments } from '@/features/admin/api'
 import type { ProjectMembers } from '@/features/projects/api'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { priorityLabels, type CardPriority, type Tag } from './api'
 import { useBoardFilter, type BoardFilter } from './board-filter'
+import { severityOptions } from '@/features/qa/bug-severity'
 
 const ANY = 'any'
 
@@ -23,43 +22,32 @@ export function BoardFilters({
     name: keyof BoardFilter,
     label: string,
     options: { value: string; label: string }[],
-    width = 'w-40',
+    width = 160,
   ) => (
-    <Select value={filter[name]} onValueChange={(value) => set(name, value)}>
-      <SelectTrigger
-        size="sm"
-        className={`${width} bg-background ${filter[name] !== ANY ? 'border-primary' : ''}`}
-        aria-label={label}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ANY}>{label}: todos</SelectItem>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      size="xs"
+      w={width}
+      aria-label={label}
+      value={filter[name]}
+      onChange={(value) => set(name, value ?? ANY)}
+      allowDeselect={false}
+      styles={filter[name] !== ANY ? { input: { borderColor: 'var(--nexa-teal-700)' } } : undefined}
+      data={[{ value: ANY, label: `${label}: todos` }, ...options]}
+    />
   )
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative">
-        <SearchIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          type="search"
-          value={filter.q}
-          onChange={(e) => set('q', e.target.value)}
-          placeholder="Filtrar por título ou número"
-          aria-label="Filtrar cards"
-          className="h-8 w-56 bg-background pl-8"
-        />
-      </div>
+    <Group gap="xs">
+      <TextInput
+        size="xs"
+        w={224}
+        type="search"
+        leftSection={<IconSearch size={14} />}
+        value={filter.q}
+        onChange={(e) => set('q', e.target.value)}
+        placeholder="Filtrar por título ou número"
+        aria-label="Filtrar cards"
+      />
       {select('assignee', 'Responsável', [
         { value: 'me', label: 'Atribuídos a mim' },
         { value: 'none', label: 'Sem responsável' },
@@ -70,7 +58,7 @@ export function BoardFilters({
           'tag',
           'Tag',
           tags.map((tag) => ({ value: tag.id, label: tag.name })),
-          'w-36',
+          144,
         )}
       {select(
         'priority',
@@ -79,7 +67,7 @@ export function BoardFilters({
           value: p,
           label: priorityLabels[p],
         })),
-        'w-36',
+        144,
       )}
       {select(
         'department',
@@ -94,13 +82,29 @@ export function BoardFilters({
           { value: 'week', label: 'Próximos 7 dias' },
           { value: 'none', label: 'Sem prazo' },
         ],
-        'w-36',
+        144,
       )}
+      {select(
+        'type',
+        'Tipo',
+        [
+          { value: 'TASK', label: 'Tarefas' },
+          { value: 'BUG', label: 'Bugs' },
+        ],
+        130,
+      )}
+      {select('severity', 'Severidade', severityOptions, 150)}
       {active && (
-        <Button variant="ghost" size="sm" onClick={clear}>
-          <XIcon /> Limpar filtros
+        <Button
+          variant="subtle"
+          color="gray"
+          size="xs"
+          leftSection={<IconX size={14} />}
+          onClick={clear}
+        >
+          Limpar filtros
         </Button>
       )}
-    </div>
+    </Group>
   )
 }

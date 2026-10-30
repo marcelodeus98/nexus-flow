@@ -1,6 +1,7 @@
-import { PauseIcon, PlayIcon, Trash2Icon } from 'lucide-react'
+import { ActionIcon, Button, Group, Paper, SimpleGrid, Text, TextInput } from '@mantine/core'
+import { IconPlayerPause, IconPlayerPlay, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import {
   formatDuration,
   useCardTime,
@@ -10,9 +11,8 @@ import {
   useTimerActions,
 } from '@/features/time/api'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
 import type { CardDetail } from '../api'
+import { Section } from './section'
 
 // Timer for this card, total logged, the entries and a manual entry form.
 export function TimeSection({
@@ -38,41 +38,45 @@ export function TimeSection({
   const finished = (time.data?.entries ?? []).filter((entry) => entry.endedAt)
 
   return (
-    <section className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold">Tempo</h3>
-        <span className="text-sm text-muted-foreground">
-          {formatDuration(total)} registrado
-          {estimateSec !== null && ` de ${formatDuration(estimateSec)} estimado`}
-        </span>
-        {canLog && (
-          <div className="ml-auto flex gap-2">
-            {runningHere ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pause.isPending}
-                onClick={() => pause.mutate(undefined, { onError })}
-              >
-                <PauseIcon /> Pausar ({formatDuration(elapsed, true)})
+    <Section
+      title="Tempo"
+      aside={
+        <>
+          <Text size="sm" c="dimmed">
+            {formatDuration(total)} registrado
+            {estimateSec !== null && ` de ${formatDuration(estimateSec)} estimado`}
+          </Text>
+          {canLog && (
+            <Group gap="xs" ml="auto">
+              {runningHere ? (
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconPlayerPause size={14} />}
+                  disabled={pause.isPending}
+                  onClick={() => pause.mutate(undefined, { onError })}
+                >
+                  Pausar ({formatDuration(elapsed, true)})
+                </Button>
+              ) : (
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconPlayerPlay size={14} />}
+                  disabled={start.isPending}
+                  onClick={() => start.mutate(card.id, { onError })}
+                >
+                  Iniciar timer
+                </Button>
+              )}
+              <Button size="xs" variant="subtle" onClick={() => setAdding(!adding)}>
+                Lançar manualmente
               </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={start.isPending}
-                onClick={() => start.mutate(card.id, { onError })}
-              >
-                <PlayIcon /> Iniciar timer
-              </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={() => setAdding(!adding)}>
-              Lançar manualmente
-            </Button>
-          </div>
-        )}
-      </div>
-
+            </Group>
+          )}
+        </>
+      }
+    >
       {adding && (
         <ManualEntryForm
           pending={create.isPending}
@@ -89,13 +93,13 @@ export function TimeSection({
       )}
 
       {finished.length > 0 && (
-        <ul className="divide-y rounded-lg border text-sm">
+        <ul className="card-drawer__list">
           {finished.slice(0, 20).map((entry) => (
-            <li key={entry.id} className="flex items-center gap-2 px-3 py-1.5">
-              <span className="w-16 font-medium tabular-nums">
+            <li key={entry.id}>
+              <Text span size="sm" fw={600} w={64}>
                 {formatDuration(entry.durationSec ?? 0)}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+              </Text>
+              <Text span size="sm" c="dimmed" truncate style={{ flex: 1, minWidth: 0 }}>
                 {entry.user.name} ·{' '}
                 {new Date(entry.startedAt).toLocaleDateString('pt-BR', {
                   day: '2-digit',
@@ -103,22 +107,23 @@ export function TimeSection({
                 })}
                 {entry.source === 'MANUAL' && ' · manual'}
                 {entry.note && ` · ${entry.note}`}
-              </span>
+              </Text>
               {entry.userId === userId && canLog && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
                   aria-label="Excluir lançamento"
                   onClick={() => remove.mutate(entry.id, { onError })}
                 >
-                  <Trash2Icon />
-                </Button>
+                  <IconTrash size={14} />
+                </ActionIcon>
               )}
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Section>
   )
 }
 
@@ -135,52 +140,59 @@ function ManualEntryForm({
   const [note, setNote] = useState('')
 
   return (
-    <form
-      className="grid grid-cols-2 gap-2 rounded-lg border p-3 sm:grid-cols-[auto_auto_6rem_1fr_auto]"
-      onSubmit={(event) => {
-        event.preventDefault()
-        const durationMinutes = Math.round(Number(hours.replace(',', '.')) * 60)
-        if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) return
-        onSubmit({
-          // Local date and time as typed, sent with the browser's offset.
-          startedAt: new Date(`${date}T${start}`).toISOString(),
-          durationMinutes,
-          note: note.trim() || undefined,
-        })
-      }}
-    >
-      <Input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        aria-label="Dia"
-        required
-      />
-      <Input
-        type="time"
-        value={start}
-        onChange={(e) => setStart(e.target.value)}
-        aria-label="Início"
-        required
-      />
-      <Input
-        inputMode="decimal"
-        value={hours}
-        onChange={(e) => setHours(e.target.value)}
-        aria-label="Horas"
-        placeholder="Horas"
-        required
-      />
-      <Input
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Nota (opcional)"
-        aria-label="Nota"
-        maxLength={500}
-      />
-      <Button type="submit" size="sm" disabled={pending}>
-        Lançar
-      </Button>
-    </form>
+    <Paper withBorder radius="md" p="sm">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          const durationMinutes = Math.round(Number(hours.replace(',', '.')) * 60)
+          if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) return
+          onSubmit({
+            // Local date and time as typed, sent with the browser's offset.
+            startedAt: new Date(`${date}T${start}`).toISOString(),
+            durationMinutes,
+            note: note.trim() || undefined,
+          })
+        }}
+      >
+        <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="xs">
+          <TextInput
+            size="xs"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            aria-label="Dia"
+            required
+          />
+          <TextInput
+            size="xs"
+            type="time"
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            aria-label="Início"
+            required
+          />
+          <TextInput
+            size="xs"
+            inputMode="decimal"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            aria-label="Horas"
+            placeholder="Horas"
+            required
+          />
+          <TextInput
+            size="xs"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Nota (opcional)"
+            aria-label="Nota"
+            maxLength={500}
+          />
+          <Button type="submit" size="xs" loading={pending}>
+            Lançar
+          </Button>
+        </SimpleGrid>
+      </form>
+    </Paper>
   )
 }

@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
+import { Anchor, Button } from '@mantine/core'
 import { googleSignInUrl, login, useAuthProviders } from './api'
 import { AuthCard, Field, FormMessage, SubmitButton } from './auth-card'
 
@@ -33,7 +33,10 @@ export function LoginPage() {
   const passwordEnabled = providers.data?.password ?? true
 
   return (
-    <AuthCard title="Entrar">
+    <AuthCard
+      title="Entrar"
+      description="Use seu e-mail e senha para acessar o Nexa Flow. Sem cadastro? Fale com um administrador."
+    >
       {urlError && <FormMessage tone="error">{urlError}</FormMessage>}
       {params.get('reset') === 'ok' && (
         <FormMessage tone="info">Senha alterada. Entre com a nova senha.</FormMessage>
@@ -44,7 +47,7 @@ export function LoginPage() {
 
       {passwordEnabled && (
         <form
-          className="space-y-4"
+          className="login-card__form"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -65,15 +68,15 @@ export function LoginPage() {
           <SubmitButton pending={mutation.isPending}>
             {mutation.isPending ? 'Entrando…' : 'Entrar'}
           </SubmitButton>
-          <Button variant="link" asChild className="w-full">
-            <Link to="/forgot-password">Esqueci minha senha</Link>
-          </Button>
+          <Anchor component={Link} to="/forgot-password" className="login-card__link" ta="center">
+            Esqueci minha senha
+          </Anchor>
         </form>
       )}
 
       {providers.data?.google && (
-        <Button variant="outline" size="lg" asChild className="w-full">
-          <a href={googleSignInUrl}>Entrar com Google</a>
+        <Button component="a" href={googleSignInUrl} variant="default" size="md" fullWidth>
+          Entrar com Google
         </Button>
       )}
     </AuthCard>

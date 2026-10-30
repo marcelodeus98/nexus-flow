@@ -1,0 +1,81 @@
+/*
+ * Identidade visual Nexa, a mesma do Nexa Assets. Tokens de marca em CSS; o
+ * tema Mantine (`theme.ts`) espelha os mesmos valores para os componentes.
+ */
+:root {
+  --nexa-teal: #01c1b3;
+  --nexa-teal-50: #e6faf8;
+  --nexa-teal-100: #c7f3ef;
+  --nexa-teal-600: #01a397;
+  --nexa-teal-700: #017a72;
+  --nexa-teal-800: #01665f;
+
+  --nexa-navy: #05223f;
+  --nexa-navy-700: #0b3358;
+  --nexa-navy-950: #031628;
+
+  --nexa-slate: #50667f;
+  --nexa-slate-400: #8496aa;
+  --nexa-mist: #dae1e8;
+  --nexa-border: #e4e9ee;
+  --nexa-surface: #f3f6f8;
+  --nexa-white: #ffffff;
+
+  --nexa-font-brand: Montserrat, Inter, system-ui, sans-serif;
+
+  /* Gráficos (burndown e barras de horas). */
+  --series-1: var(--nexa-teal-700);
+  --chart-reference: var(--nexa-slate-400);
+  --chart-grid: var(--nexa-border);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--nexa-navy);
+  background: var(--nexa-surface);
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+/* Link de texto no corpo da página (sublinhado, cor primária). */
+.text-link {
+  color: var(--nexa-teal-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

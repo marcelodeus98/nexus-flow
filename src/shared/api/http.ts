@@ -1,5 +1,5 @@
 import { getSessionState, refreshSession } from '@/shared/auth/session-store'
-import { env } from '@/shared/config/env'
+import { apiClient } from './client'
 
 export class ApiError extends Error {
   readonly status: number
@@ -12,25 +12,30 @@ export class ApiError extends Error {
   }
 }
 
-function send(path: string, init: RequestInit): Promise<Response> {
-  const headers = new Headers(init.headers)
-  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
-  const state = getSessionState()
-  if (state.status === 'authenticated' && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${state.session.accessToken}`)
-  }
-  return fetch(`${env.VITE_API_URL}${path}`, { ...init, credentials: 'include', headers })
+export type HttpInit = {
+  method?: string
+  // Already serialized JSON.
+  body?: string
+  headers?: Record<string, string>
 }
 
-// Thin fetch wrapper until the OpenAPI client (orval) is generated from the API.
-// An expired access token is renewed once and the request retried.
-export async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
+function send(path: string, init: HttpInit) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...init.headers }
+  const state = getSessionState()
+  if (state.status === 'authenticated' && !headers.Authorization) {
+    headers.Authorization = `Bearer ${state.session.accessToken}`
+  }
+  return apiClient.request({ url: path, method: init.method ?? 'GET', data: init.body, headers })
+}
+
+// Thin wrapper over axios until the OpenAPI client (orval) is generated from
+// the API. An expired access token is renewed once and the request retried.
+// Network failures reject with axios' own error (see apiErrorMessage).
+export async function http<T>(path: string, init: HttpInit = {}): Promise<T> {
   let response = await send(path, init)
   if (response.status === 401 && !path.startsWith('/auth/') && (await refreshSession())) {
     response = await send(path, init)
   }
-  const body: unknown =
-    response.status === 204 ? undefined : await response.json().catch(() => undefined)
-  if (!response.ok) throw new ApiError(response.status, body)
-  return body as T
+  if (response.status >= 400) throw new ApiError(response.status, response.data)
+  return (response.status === 204 ? undefined : response.data) as T
 }

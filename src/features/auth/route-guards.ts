@@ -1,4 +1,4 @@
-import { redirect, type LoaderFunctionArgs } from 'react-router'
+import { redirect, type LoaderFunctionArgs } from 'react-router-dom'
 import { ensureSession, getSessionState } from '@/shared/auth/session-store'
 
 // Loader of the authenticated part of the app: no session, go to login and

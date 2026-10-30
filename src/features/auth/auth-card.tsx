@@ -1,52 +1,86 @@
-import { useId, type ComponentProps, type ReactNode } from 'react'
-import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Alert, Button, PasswordInput, Stack, TextInput } from '@mantine/core'
+import { useId, type ReactNode } from 'react'
+import eclipseImage from '@/assets/auth/login-eclipse.png'
+import heroImage from '@/assets/auth/login-hero.webp'
+import raysImage from '@/assets/auth/login-rays.png'
+import { BrandLogo } from '@/shared/brand/brand-logo'
+import './auth-layout.css'
 
-export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
+// Frame of the public auth screens, the same as Nexa Assets': the form on
+// the left with the logo, the photo over the teal block on the right. Below
+// 960px only the form stays.
+export function AuthCard({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: ReactNode
+}) {
+  const titleId = useId()
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-muted px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardDescription className="font-semibold text-primary">Nexa Flow</CardDescription>
-          <CardTitle className="text-xl">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">{children}</CardContent>
-      </Card>
-    </div>
+    <main className="login-page">
+      <img className="login-page__eclipse" src={eclipseImage} alt="" />
+      <section className="login-page__form-panel" aria-labelledby={titleId}>
+        <img className="login-page__rays-bottom" src={raysImage} alt="" />
+        <header className="login-page__brand">
+          <BrandLogo size={48} />
+        </header>
+        <div className="login-page__form-body">
+          <div className="login-card">
+            <header className="login-card__header">
+              <h1 id={titleId}>{title}</h1>
+              {description && <p>{description}</p>}
+            </header>
+            <Stack className="login-card__fields" gap="lg">
+              {children}
+            </Stack>
+          </div>
+        </div>
+      </section>
+      <aside className="login-page__visual" aria-hidden="true">
+        <img className="login-page__hero" src={heroImage} alt="" />
+      </aside>
+    </main>
   )
 }
 
-export function Field({ label, ...input }: { label: string } & ComponentProps<typeof Input>) {
-  const id = useId()
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} {...input} />
-    </div>
+type FieldProps = {
+  label: string
+  name: string
+  type: 'email' | 'password'
+  autoComplete: string
+  required?: boolean
+  minLength?: number
+  maxLength?: number
+}
+
+export function Field({ type, ...input }: FieldProps) {
+  return type === 'password' ? (
+    <PasswordInput size="md" {...input} />
+  ) : (
+    <TextInput type={type} size="md" {...input} />
   )
 }
 
 export function SubmitButton({ pending, children }: { pending: boolean; children: ReactNode }) {
   return (
-    <Button type="submit" size="lg" className="w-full" disabled={pending}>
+    <Button type="submit" size="md" fullWidth loading={pending} mt="xs">
       {children}
     </Button>
   )
 }
 
 export function FormMessage({ tone, children }: { tone: 'error' | 'info'; children: ReactNode }) {
-  const colors =
-    tone === 'error'
-      ? 'border-destructive/30 bg-destructive/10 text-destructive'
-      : 'border-emerald-600/30 bg-emerald-600/10 text-emerald-700'
   return (
-    <p
+    <Alert
       role={tone === 'error' ? 'alert' : 'status'}
-      className={`rounded-lg border px-3 py-2 text-sm ${colors}`}
+      color={tone === 'error' ? 'red' : 'brand'}
+      variant="light"
+      p="xs"
     >
       {children}
-    </p>
+    </Alert>
   )
 }

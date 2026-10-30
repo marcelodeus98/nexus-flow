@@ -1,12 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router'
-import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
+import { toast } from '@/shared/notify/toast'
 import { http } from '@/shared/api/http'
 import { getSocket } from '@/shared/realtime/socket'
 
 export type NotificationType =
-  'MENTION' | 'ASSIGNED' | 'COMMENT' | 'DUE_SOON' | 'OVERDUE' | 'TIMER_LONG' | 'EXPORT_READY'
+  | 'MENTION'
+  | 'ASSIGNED'
+  | 'COMMENT'
+  | 'DUE_SOON'
+  | 'OVERDUE'
+  | 'TIMER_LONG'
+  | 'EXPORT_READY'
+  | 'QA_APPROVED'
+  | 'QA_REJECTED'
 
 export type NotificationPayload = {
   projectKey?: string
@@ -59,7 +67,7 @@ export function useNotificationStream() {
           : page,
       )
       const { title, path } = notificationText(notification)
-      toast(title, { action: { label: 'Abrir', onClick: () => void navigate(path) } })
+      toast.action(title, 'Abrir', () => void navigate(path))
     }
     socket.on('notification.new', onNew)
     return () => {
@@ -119,6 +127,8 @@ export const typeLabels: Record<NotificationType, string> = {
   OVERDUE: 'Cards atrasados',
   TIMER_LONG: 'Timer ligado há muito tempo',
   EXPORT_READY: 'Exportação pronta',
+  QA_APPROVED: 'Card meu aprovado pelo QA',
+  QA_REJECTED: 'Card meu reprovado pelo QA',
 }
 
 // What a notification says and where it leads.
@@ -142,5 +152,9 @@ export function notificationText(n: AppNotification): { title: string; path: str
       return { title: `Seu timer em ${card} está ligado há ${p.hours ?? 8} h`, path: cardPath }
     case 'EXPORT_READY':
       return { title: `Exportação pronta: ${p.fileName ?? ''}`, path: '/exports' }
+    case 'QA_APPROVED':
+      return { title: `${actor} aprovou ${card}`, path: cardPath }
+    case 'QA_REJECTED':
+      return { title: `${actor} reprovou ${card}`, path: cardPath }
   }
 }

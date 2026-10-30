@@ -1,0 +1,261 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 264px;
+  height: 100vh;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  /* Fundo do mockup: brilhos de 4 pontas (sidebar-star.png) e pontinhos
+     espalhados. Posições em % acompanham a altura da tela. */
+  background-color: #0b1a3f;
+  background-image:
+    url('../../assets/sidebar-star.png'), url('../../assets/sidebar-star.png'),
+    url('../../assets/sidebar-star.png'), url('../../assets/sidebar-star.png'),
+    url('../../assets/sidebar-star.png'), url('../../assets/sidebar-star.png'),
+    url('../../assets/sidebar-star.png'), url('../../assets/sidebar-star.png'),
+    radial-gradient(circle at 48% 28%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 92% 44%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 30% 41%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 76% 56%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 8% 70%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 62% 72%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 52% 62%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 86% 84%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 22% 88%, rgba(255, 255, 255, 0.28) 0 1.5px, transparent 2px);
+  background-position:
+    16% 24%,
+    82% 31%,
+    58% 47%,
+    24% 58%,
+    88% 66%,
+    40% 79%,
+    70% 91%,
+    12% 95%,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  background-size:
+    14px 13px,
+    11px 10px,
+    14px 13px,
+    10px 10px,
+    14px 13px,
+    12px 11px,
+    10px 10px,
+    14px 13px,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  transition: width 160ms ease;
+}
+
+.sidebar--collapsed {
+  width: 78px;
+}
+
+.sidebar--collapsed .sidebar__brand {
+  padding: 1.15rem 0 1rem;
+}
+
+.sidebar--collapsed .sidebar__watermark {
+  display: none;
+}
+
+.sidebar--collapsed .sidebar__nav .mantine-Stack-root {
+  align-items: center;
+}
+
+.sidebar--collapsed .mantine-NavLink-root {
+  width: 2.75rem;
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar--collapsed .mantine-NavLink-body {
+  display: none;
+}
+
+.sidebar--collapsed .sidebar__footer {
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sidebar__brand {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 2.4rem 1.15rem 2.1rem;
+}
+
+/* "N" gigante atrás do logo, quase fundido ao fundo. */
+.sidebar__watermark {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.sidebar__brand .brand-logo {
+  position: relative;
+}
+
+.sidebar__brand .brand-logo {
+  color: #ffffff;
+}
+
+.sidebar--collapsed .brand-logo__wordmark {
+  display: none;
+}
+
+.sidebar__nav {
+  flex: 1 1 auto;
+}
+
+.sidebar__section-title {
+  padding: 0 0.6rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sidebar__footer {
+  padding: 0.9rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__user {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sidebar .mantine-NavLink-root {
+  border-radius: 0.5rem;
+  color: #ffffff;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+.sidebar .mantine-NavLink-root:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Ativo: bloco teal sólido, como no mockup. O pai de um submenu aberto não
+   vira um segundo bloco — o destaque fica só no filho ativo. */
+.sidebar .mantine-NavLink-root[data-active]:not([data-expanded]) {
+  background: #00b3c0;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 179, 192, 0.25);
+}
+
+.sidebar .mantine-NavLink-root[data-active]:not([data-expanded]):hover {
+  background: #009ca8;
+}
+
+.sidebar .mantine-NavLink-root[data-active][data-expanded] {
+  background: transparent;
+  color: #ffffff;
+}
+
+.sidebar .mantine-NavLink-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sidebar .mantine-NavLink-section {
+  color: inherit;
+}
+
+.sidebar__backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+  }
+
+  /* the drawer is always the full nav on mobile; icon-rail collapsing doesn't apply */
+  .sidebar--collapsed {
+    width: 264px;
+  }
+
+  .sidebar--collapsed .sidebar__brand {
+    padding: 2.4rem 1.15rem 2.1rem;
+  }
+
+  .sidebar--collapsed .sidebar__watermark {
+    display: block;
+  }
+
+  .sidebar--collapsed .sidebar__nav .mantine-Stack-root {
+    align-items: stretch;
+  }
+
+  .sidebar--collapsed .mantine-NavLink-root {
+    width: auto;
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .sidebar--collapsed .mantine-NavLink-body {
+    display: block;
+  }
+
+  .sidebar--collapsed .sidebar__footer {
+    flex-direction: row;
+  }
+
+  .sidebar--collapsed .brand-logo__wordmark {
+    display: inline-flex;
+  }
+
+  .sidebar--mobile-open {
+    transform: translateX(0);
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.4);
+  }
+
+  .sidebar__backdrop--visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 34, 63, 0.5);
+    z-index: 999;
+  }
+}
+
+/* Projetos na sidebar: a chave em fonte mono antes do nome. */
+.sidebar__project-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.12);
+}

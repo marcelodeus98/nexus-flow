@@ -1,0 +1,30 @@
+.notification-bell__header {
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.notification-bell__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.notification-bell__item:last-child {
+  border-bottom: 0;
+}
+
+.notification-bell__item:hover {
+  background: var(--nexa-surface);
+}
+
+.notification-bell__dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.notification-bell__dot[data-unread] {
+  background: var(--nexa-teal);
+}

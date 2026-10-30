@@ -1,0 +1,34 @@
+.qa-queue {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-queue > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+}
+
+.qa-queue > li + li {
+  border-top: 1px solid var(--nexa-border);
+}
+
+.qa-queue__link {
+  flex: 1;
+  min-width: 12rem;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.qa-queue__link:hover {
+  text-decoration: underline;
+}
+
+.qa-queue__since {
+  flex-shrink: 0;
+}

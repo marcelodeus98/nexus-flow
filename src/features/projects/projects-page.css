@@ -1,0 +1,16 @@
+.projects-page__card {
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.projects-page__card:hover {
+  border-color: var(--nexa-teal);
+  box-shadow: 0 6px 16px rgba(1, 193, 179, 0.12);
+}
+
+.projects-page__empty {
+  border-style: dashed;
+}

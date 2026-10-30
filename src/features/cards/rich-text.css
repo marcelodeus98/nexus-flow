@@ -1,0 +1,135 @@
+/* Tiptap documents: the editors (description, comments) and the read-only
+   view of comments share these. */
+.rich-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+
+.rich-text p {
+  margin: 0.25rem 0;
+}
+
+.rich-text ul,
+.rich-text ol {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.rich-text code {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--nexa-surface);
+  font-size: 0.8em;
+}
+
+.rich-text pre {
+  overflow-x: auto;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--nexa-surface);
+  font-size: 0.75rem;
+}
+
+.rich-text blockquote {
+  margin: 0.25rem 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--nexa-mist);
+  color: var(--nexa-slate);
+}
+
+.rich-text__heading {
+  font-weight: 700;
+}
+
+.rich-text__mention {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--nexa-teal-50);
+  color: var(--nexa-teal-700);
+  font-weight: 600;
+}
+
+/* Editor frame (border, focus ring), as Mantine inputs. */
+.rich-text-box {
+  position: relative;
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-md);
+  background: #ffffff;
+}
+
+.rich-text-box:focus-within {
+  border-color: var(--nexa-teal-700);
+}
+
+.rich-text-box__toolbar {
+  display: flex;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.rich-text-box .rich-text {
+  min-height: 4rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.rich-text-box__placeholder {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.75rem;
+  margin: 0;
+  pointer-events: none;
+  font-size: 0.875rem;
+  color: var(--nexa-slate-400);
+}
+
+.rich-text-view {
+  cursor: text;
+  border: 1px solid transparent;
+  border-radius: var(--mantine-radius-md);
+}
+
+.rich-text-view--editable:hover {
+  border-color: var(--nexa-border);
+}
+
+.rich-text-view .rich-text {
+  padding: 0.5rem 0.75rem;
+}
+
+.mention-list {
+  width: 14rem;
+  max-height: 14rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--nexa-border);
+  border-radius: var(--mantine-radius-md);
+  background: #ffffff;
+  font-size: 0.875rem;
+  box-shadow: var(--mantine-shadow-md);
+}
+
+.mention-list__item {
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--mantine-radius-sm);
+  cursor: pointer;
+}
+
+.mention-list__item[aria-selected='true'] {
+  background: var(--nexa-teal-50);
+}
+
+.mention-list__empty {
+  padding: 0.375rem 0.5rem;
+  color: var(--nexa-slate);
+}
+
+.comment-bubble {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--mantine-radius-md);
+  background: var(--nexa-surface);
+}

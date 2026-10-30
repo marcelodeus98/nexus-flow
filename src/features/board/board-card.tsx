@@ -1,11 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CalendarIcon, ListChecksIcon } from 'lucide-react'
+import { IconBug, IconCalendar, IconListCheck, IconRotate } from '@tabler/icons-react'
+import { severityLabels } from '@/features/qa/bug-severity'
 import { memo, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link } from 'react-router-dom'
 import type { EstimateView } from '@/features/projects/api'
 import type { CardSummary, Tag } from './api'
 import { estimateLabel, initials } from './card-format'
+import './board.css'
 
 export type CardLookups = {
   projectKey: string
@@ -16,11 +18,6 @@ export type CardLookups = {
   today: string
 }
 
-const priorityStyles = {
-  HIGH: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
-  URGENT: 'bg-red-500/15 text-red-700 dark:text-red-300',
-} as const
-
 // What a card looks like on the board (also used in the drag overlay).
 export function CardFace({ card, lookups }: { card: CardSummary; lookups: CardLookups }) {
   const due = card.dueDate ? new Date(card.dueDate) : null
@@ -28,25 +25,39 @@ export function CardFace({ card, lookups }: { card: CardSummary; lookups: CardLo
   const estimate = estimateLabel(card, lookups.estimateView)
   const tags = card.tagIds.flatMap((id) => lookups.tagsById.get(id) ?? [])
 
+  // Plain elements and CSS (board.css): a board can hold 500 of these.
   return (
-    <div className="space-y-2 rounded-lg border bg-background p-3 text-sm shadow-xs">
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-xs text-muted-foreground">
+    <div className={`board-card${card.type === 'BUG' ? ' board-card--bug' : ''}`}>
+      <div className="board-card__top">
+        <span className="board-card__key">
+          {card.type === 'BUG' && <IconBug size={12} aria-label="Bug" />}
           {lookups.projectKey}-{card.number}
         </span>
-        {(card.priority === 'HIGH' || card.priority === 'URGENT') && (
-          <span className={`rounded px-1.5 text-xs font-medium ${priorityStyles[card.priority]}`}>
-            {card.priority === 'URGENT' ? 'Urgente' : 'Alta'}
-          </span>
-        )}
+        <span className="board-card__flags">
+          {card.bugSeverity && (
+            <span className={`board-card__severity board-card__severity--${card.bugSeverity}`}>
+              {severityLabels[card.bugSeverity]}
+            </span>
+          )}
+          {card.qaStatus && (
+            <span className={`board-card__qa board-card__qa--${card.qaStatus}`}>
+              {card.qaStatus === 'APPROVED' ? 'Aprovado' : 'Reprovado'}
+            </span>
+          )}
+          {(card.priority === 'HIGH' || card.priority === 'URGENT') && (
+            <span className={`board-card__priority board-card__priority--${card.priority}`}>
+              {card.priority === 'URGENT' ? 'Urgente' : 'Alta'}
+            </span>
+          )}
+        </span>
       </div>
-      <p className="leading-snug font-medium break-words">{card.title}</p>
+      <p className="board-card__title">{card.title}</p>
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="board-card__tags">
           {tags.map((tag) => (
             <span
               key={tag.id}
-              className="rounded px-1.5 text-xs"
+              className="board-card__tag"
               style={{ backgroundColor: `${tag.color}22`, color: tag.color }}
             >
               {tag.name}
@@ -54,34 +65,41 @@ export function CardFace({ card, lookups }: { card: CardSummary; lookups: CardLo
           ))}
         </div>
       )}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="board-card__meta">
         {estimate && <span>{estimate}</span>}
+        {card.rejectionCount > 0 && (
+          <span
+            className="board-card__meta-item board-card__meta-item--rework"
+            title={`Voltou do QA ${card.rejectionCount} ${card.rejectionCount === 1 ? 'vez' : 'vezes'}`}
+          >
+            <IconRotate size={12} aria-hidden />
+            {card.rejectionCount}
+          </span>
+        )}
         {card.checklistTotal > 0 && (
           <span
-            className={`inline-flex items-center gap-1 ${
-              card.checklistDone === card.checklistTotal ? 'text-emerald-700' : ''
+            className={`board-card__meta-item${
+              card.checklistDone === card.checklistTotal ? ' board-card__meta-item--done' : ''
             }`}
             title="Checklist"
           >
-            <ListChecksIcon className="size-3" aria-hidden />
+            <IconListCheck size={12} aria-hidden />
             {card.checklistDone}/{card.checklistTotal}
           </span>
         )}
         {due && (
-          <span className={`inline-flex items-center gap-1 ${overdue ? 'text-destructive' : ''}`}>
-            <CalendarIcon className="size-3" aria-hidden />
+          <span
+            className={`board-card__meta-item${overdue ? ' board-card__meta-item--overdue' : ''}`}
+          >
+            <IconCalendar size={12} aria-hidden />
             {due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' })}
           </span>
         )}
-        <span className="ml-auto flex -space-x-1.5">
+        <span className="board-card__avatars">
           {card.assigneeIds.slice(0, 3).map((id) => {
             const name = lookups.membersById.get(id)?.name ?? '?'
             return (
-              <span
-                key={id}
-                title={name}
-                className="flex size-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-semibold text-foreground"
-              >
+              <span key={id} title={name} className="board-card__avatar">
                 {initials(name)}
               </span>
             )
@@ -116,9 +134,7 @@ export const SortableCard = memo(
         // Off-screen cards skip layout and paint (500-card boards); the
         // intrinsic size keeps the column's scroll height and dnd-kit's
         // measurements right.
-        className={`[contain-intrinsic-size:auto_96px] [content-visibility:auto] ${
-          isDragging ? 'opacity-40' : ''
-        }`}
+        className={`board-card__slot${isDragging ? ' board-card__slot--dragging' : ''}`}
         {...attributes}
         {...listeners}
       >
@@ -132,13 +148,14 @@ export const SortableCard = memo(
     prev.card.id === next.card.id &&
     prev.card.version === next.card.version &&
     prev.card.columnId === next.card.columnId &&
+    prev.card.qaStatus === next.card.qaStatus &&
     prev.draggable === next.draggable &&
     prev.lookups === next.lookups,
 )
 
 function CardLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="block rounded-lg focus-visible:outline-2" draggable={false}>
+    <Link to={to} className="board-card__link" draggable={false}>
       {children}
     </Link>
   )

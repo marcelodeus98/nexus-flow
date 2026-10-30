@@ -1,11 +1,10 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { PlusIcon } from 'lucide-react'
+import { Button, Checkbox, Group, Stack, Textarea } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Button } from '@/shared/ui/button'
-import { Textarea } from '@/shared/ui/textarea'
 import { useCreateCard, type BoardColumn as Column, type CardSummary } from './api'
 import { SortableCard, type CardLookups } from './board-card'
 
@@ -34,14 +33,12 @@ export function BoardColumn({
     <section
       ref={setNodeRef}
       aria-label={column.name}
-      className={`flex max-h-full flex-col rounded-xl ${isOver ? 'bg-primary/10' : 'bg-muted/70'} ${className}`}
+      className={`board-column${isOver ? ' board-column--over' : ''} ${className}`}
     >
-      <header className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <h2 className="text-sm font-semibold">{column.name}</h2>
+      <header className="board-column__header">
+        <h2 className="board-column__name">{column.name}</h2>
         <span
-          className={`rounded-full px-2 text-xs ${
-            overLimit ? 'bg-destructive/15 font-semibold text-destructive' : 'text-muted-foreground'
-          }`}
+          className={`board-column__count${overLimit ? ' board-column__count--over' : ''}`}
           title={column.wipLimit !== null ? `Limite de WIP: ${column.wipLimit}` : undefined}
         >
           {cards.length}
@@ -49,7 +46,7 @@ export function BoardColumn({
         </span>
       </header>
       <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <ul className="min-h-16 flex-1 space-y-2 overflow-y-auto px-2 pb-2">
+        <ul className="board-column__cards">
           {cards.map((card) => (
             <SortableCard key={card.id} card={card} lookups={lookups} draggable={canMove} />
           ))}
@@ -64,6 +61,7 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
   const create = useCreateCard(projectId)
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
+  const [isBug, setIsBug] = useState(false)
 
   function submit(event?: FormEvent) {
     event?.preventDefault()
@@ -73,7 +71,7 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
     // (the socket can show the new card first). Restored if creation fails.
     setTitle('')
     create.mutate(
-      { title: trimmed, columnId },
+      { title: trimmed, columnId, ...(isBug && { type: 'BUG' as const }) },
       {
         onError: (error) => {
           toast.error(apiErrorMessage(error))
@@ -85,40 +83,53 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
 
   if (!open) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mx-2 mb-2 justify-start text-muted-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <PlusIcon /> Adicionar card
-      </Button>
+      <div className="board-column__add">
+        <Button
+          variant="subtle"
+          color="gray"
+          size="xs"
+          fullWidth
+          justify="flex-start"
+          leftSection={<IconPlus size={14} />}
+          onClick={() => setOpen(true)}
+        >
+          Adicionar card
+        </Button>
+      </div>
     )
   }
   return (
-    <form onSubmit={submit} className="space-y-2 px-2 pb-2">
-      <Textarea
-        autoFocus
-        rows={2}
-        maxLength={200}
-        placeholder="Título do card"
-        aria-label="Título do novo card"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) submit(e)
-          if (e.key === 'Escape') setOpen(false)
-        }}
-        className="bg-background"
-      />
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={create.isPending}>
-          Adicionar
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
-          Cancelar
-        </Button>
-      </div>
+    <form onSubmit={submit} className="board-column__add">
+      <Stack gap="xs">
+        <Textarea
+          autoFocus
+          autosize
+          minRows={2}
+          maxLength={200}
+          placeholder="Título do card"
+          aria-label="Título do novo card"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) submit(e)
+            if (e.key === 'Escape') setOpen(false)
+          }}
+        />
+        <Checkbox
+          size="xs"
+          label="É um bug"
+          checked={isBug}
+          onChange={(e) => setIsBug(e.currentTarget.checked)}
+        />
+        <Group gap="xs">
+          <Button type="submit" size="xs" loading={create.isPending}>
+            Adicionar
+          </Button>
+          <Button size="xs" variant="subtle" color="gray" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+        </Group>
+      </Stack>
     </form>
   )
 }

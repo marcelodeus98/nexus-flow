@@ -1,0 +1,25 @@
+.timer-widget {
+  padding: 0.15rem 0.15rem 0.15rem 0.75rem;
+  border: 1px solid var(--nexa-border);
+  border-radius: 999px;
+  background: var(--nexa-surface);
+  font-size: 0.875rem;
+}
+
+.timer-widget--running {
+  border-color: var(--nexa-teal-100);
+  background: var(--nexa-teal-50);
+}
+
+.timer-widget__card {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .timer-widget__card {
+    display: none;
+  }
+}

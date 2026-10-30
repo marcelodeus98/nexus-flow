@@ -14,6 +14,10 @@ const card = (overrides: Partial<CardSummary> = {}): CardSummary => ({
   rank: 'a0',
   sprintId: null,
   parentId: null,
+  type: 'TASK',
+  bugSeverity: null,
+  qaStatus: null,
+  rejectionCount: 0,
   version: 1,
   updatedAt: '2026-10-29T00:00:00.000Z',
   assigneeIds: [],
@@ -31,6 +35,8 @@ const none: BoardFilter = {
   priority: 'any',
   department: 'any',
   due: 'any',
+  type: 'any',
+  severity: 'any',
 }
 const context = { userId: 'me', today: '2026-10-29' }
 const matches = (c: CardSummary, filter: Partial<BoardFilter>) =>

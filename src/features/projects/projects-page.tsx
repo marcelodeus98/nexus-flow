@@ -1,23 +1,24 @@
-import { FolderKanbanIcon, PlusIcon } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { toast } from 'sonner'
-import { FormField } from '@/features/admin/form-field'
-import { apiErrorMessage } from '@/shared/api/errors'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Textarea } from '@/shared/ui/textarea'
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Group,
+  Modal,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
+import { IconLayoutKanban, IconPlus } from '@tabler/icons-react'
+import { useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { apiErrorMessage } from '@/shared/api/errors'
+import { toast } from '@/shared/notify/toast'
 import {
   methodologyLabels,
   roleLabels,
@@ -26,6 +27,8 @@ import {
   type EstimateView,
   type Methodology,
 } from './api'
+import { estimateViewOptions, methodologyOptions } from './options'
+import './projects-page.css'
 
 export function ProjectsPage() {
   const projects = useProjects()
@@ -34,38 +37,50 @@ export function ProjectsPage() {
   const archived = projects.data?.filter((p) => p.status === 'ARCHIVED') ?? []
 
   return (
-    <section className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Projetos</h1>
-        <Button onClick={() => setCreating(true)}>
-          <PlusIcon /> Novo projeto
+    <Stack gap="lg">
+      <Group justify="space-between">
+        <Title order={2}>Projetos</Title>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>
+          Novo projeto
         </Button>
-      </div>
+      </Group>
 
-      {projects.isPending && <p className="text-sm text-muted-foreground">Carregando…</p>}
+      {projects.isPending && (
+        <Text size="sm" c="dimmed">
+          Carregando…
+        </Text>
+      )}
       {projects.isError && (
-        <p className="text-sm text-destructive">{apiErrorMessage(projects.error)}</p>
+        <Text size="sm" c="red">
+          {apiErrorMessage(projects.error)}
+        </Text>
       )}
       {projects.isSuccess && projects.data.length === 0 && (
-        <div className="rounded-lg border border-dashed bg-background p-10 text-center">
-          <FolderKanbanIcon className="mx-auto size-8 text-muted-foreground" aria-hidden />
-          <p className="mt-3 font-medium">Nenhum projeto ainda</p>
-          <p className="text-sm text-muted-foreground">
-            Crie um projeto ou peça para ser adicionado a um.
-          </p>
-        </div>
+        <Card withBorder radius="md" p="xl" className="projects-page__empty">
+          <Stack align="center" gap="xs">
+            <ThemeIcon size={48} radius="xl" variant="light">
+              <IconLayoutKanban size={24} />
+            </ThemeIcon>
+            <Text fw={600}>Nenhum projeto ainda</Text>
+            <Text size="sm" c="dimmed">
+              Crie um projeto ou peça para ser adicionado a um.
+            </Text>
+          </Stack>
+        </Card>
       )}
 
       <ProjectGrid projects={active} />
       {archived.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Arquivados</h2>
+        <Stack gap="sm">
+          <Text size="sm" fw={500} c="dimmed">
+            Arquivados
+          </Text>
           <ProjectGrid projects={archived} />
-        </div>
+        </Stack>
       )}
 
       {creating && <CreateProjectDialog onClose={() => setCreating(false)} />}
-    </section>
+    </Stack>
   )
 }
 
@@ -75,33 +90,43 @@ function ProjectGrid({
   projects: NonNullable<ReturnType<typeof useProjects>['data']>
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
       {projects.map((project) => (
-        <Link
+        <Card
           key={project.id}
+          component={Link}
           to={`/p/${project.key}`}
-          className="rounded-xl focus-visible:outline-2"
+          withBorder
+          radius="md"
+          padding="lg"
+          className="projects-page__card"
         >
-          <Card className="h-full transition-colors hover:bg-muted/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                  {project.key}
-                </span>
-                <span className="truncate">{project.name}</span>
-              </CardTitle>
-              <CardDescription className="flex flex-wrap items-center gap-2">
-                <span>{methodologyLabels[project.methodology]}</span>
-                {project.myRole && <Badge variant="secondary">{roleLabels[project.myRole]}</Badge>}
-              </CardDescription>
-              {project.description && (
-                <CardDescription className="line-clamp-2">{project.description}</CardDescription>
-              )}
-            </CardHeader>
-          </Card>
-        </Link>
+          <Group gap="xs" wrap="nowrap">
+            <Badge variant="light" radius="sm" ff="monospace">
+              {project.key}
+            </Badge>
+            <Text fw={600} truncate>
+              {project.name}
+            </Text>
+          </Group>
+          <Group gap="xs" mt="xs">
+            <Text size="sm" c="dimmed">
+              {methodologyLabels[project.methodology]}
+            </Text>
+            {project.myRole && (
+              <Badge color="navy" variant="light" size="sm">
+                {roleLabels[project.myRole]}
+              </Badge>
+            )}
+          </Group>
+          {project.description && (
+            <Text size="sm" c="dimmed" mt="xs" lineClamp={2}>
+              {project.description}
+            </Text>
+          )}
+        </Card>
       ))}
-    </div>
+    </SimpleGrid>
   )
 }
 
@@ -114,6 +139,7 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState('')
   const [methodology, setMethodology] = useState<Methodology>('KANBAN')
   const [estimateView, setEstimateView] = useState<EstimateView>('POINTS')
+  const [qaFlow, setQaFlow] = useState(false)
 
   // Suggests a key from the name until the user types one.
   const suggestedKey = name
@@ -132,6 +158,7 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
         description: description.trim() || undefined,
         methodology,
         defaultEstimateView: estimateView,
+        qaFlow,
       },
       {
         onSuccess: (project) => {
@@ -145,79 +172,69 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={submit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Novo projeto</DialogTitle>
-            <DialogDescription>Você será o gestor do projeto.</DialogDescription>
-          </DialogHeader>
-          <FormField label="Nome">
-            <Input value={name} onChange={(e) => setName(e.target.value)} minLength={2} required />
-          </FormField>
-          <FormField
-            label="Chave"
-            hint={`Prefixo dos cards: ${currentKey || 'NEXA'}-123. Não muda depois.`}
-          >
-            <Input
-              value={currentKey}
-              onChange={(e) => {
-                setKeyTouched(true)
-                setKey(e.target.value.toUpperCase())
-              }}
-              pattern="[A-Za-z][A-Za-z0-9]{1,9}"
-              title="2 a 10 letras ou números, começando com letra"
-              className="font-mono uppercase"
-              required
-            />
-          </FormField>
-          <FormField label="Descrição">
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-            />
-          </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Metodologia">
-              <Select value={methodology} onValueChange={(v) => setMethodology(v as Methodology)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(methodologyLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-            <FormField label="Estimativa exibida">
-              <Select
-                value={estimateView}
-                onValueChange={(v) => setEstimateView(v as EstimateView)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="POINTS">Story points</SelectItem>
-                  <SelectItem value="HOURS">Horas</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              Criar projeto
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Modal opened onClose={onClose} title="Novo projeto">
+      <Stack component="form" gap="md" onSubmit={submit}>
+        <Text size="sm" c="dimmed">
+          Você será o gestor do projeto.
+        </Text>
+        <TextInput
+          label="Nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          minLength={2}
+          required
+        />
+        <TextInput
+          label="Chave"
+          description={`Prefixo dos cards: ${currentKey || 'NEXA'}-123. Não muda depois.`}
+          value={currentKey}
+          onChange={(e) => {
+            setKeyTouched(true)
+            setKey(e.target.value.toUpperCase())
+          }}
+          pattern="[A-Za-z][A-Za-z0-9]{1,9}"
+          title="2 a 10 letras ou números, começando com letra"
+          styles={{ input: { fontFamily: 'monospace' } }}
+          required
+        />
+        <Textarea
+          label="Descrição"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          autosize
+          minRows={2}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Select
+            label="Metodologia"
+            value={methodology}
+            onChange={(v) => v && setMethodology(v as Methodology)}
+            allowDeselect={false}
+            data={methodologyOptions}
+          />
+          <Select
+            label="Estimativa exibida"
+            value={estimateView}
+            onChange={(v) => v && setEstimateView(v as EstimateView)}
+            allowDeselect={false}
+            data={estimateViewOptions}
+          />
+        </SimpleGrid>
+        <Checkbox
+          label="Fluxo de QA"
+          description='Cria a coluna "Em teste" e só deixa ir para Concluído o card aprovado pelo QA.'
+          checked={qaFlow}
+          onChange={(e) => setQaFlow(e.currentTarget.checked)}
+        />
+        <Group justify="flex-end" mt="sm">
+          <Button variant="default" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={create.isPending}>
+            Criar projeto
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

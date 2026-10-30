@@ -1,7 +1,7 @@
-import { toast } from 'sonner'
+import { Select } from '@mantine/core'
+import { toast } from '@/shared/notify/toast'
 import { useSetSprintCards, useSprints } from '@/features/sprints/api'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import type { CardDetail } from '../api'
 
 const BACKLOG = 'backlog'
@@ -24,7 +24,8 @@ export function SprintField({
     (sprint) => sprint.status !== 'CLOSED' || sprint.id === card.sprintId,
   )
 
-  function change(value: string) {
+  function change(value: string | null) {
+    if (!value) return
     const onError = (error: unknown) => toast.error(apiErrorMessage(error))
     if (value === BACKLOG) {
       if (card.sprintId)
@@ -36,23 +37,22 @@ export function SprintField({
 
   return (
     <Select
+      size="xs"
+      aria-label="Sprint"
       value={card.sprintId ?? BACKLOG}
       disabled={!editable || current?.status === 'CLOSED' || setCards.isPending}
-      onValueChange={change}
-    >
-      <SelectTrigger size="sm" className="w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={BACKLOG}>Backlog (sem sprint)</SelectItem>
-        {options.map((sprint) => (
-          <SelectItem key={sprint.id} value={sprint.id}>
-            {sprint.name}
-            {sprint.status === 'ACTIVE' && ' (em andamento)'}
-            {sprint.status === 'CLOSED' && ' (encerrada)'}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      onChange={change}
+      allowDeselect={false}
+      data={[
+        { value: BACKLOG, label: 'Backlog (sem sprint)' },
+        ...options.map((sprint) => ({
+          value: sprint.id,
+          label:
+            sprint.name +
+            (sprint.status === 'ACTIVE' ? ' (em andamento)' : '') +
+            (sprint.status === 'CLOSED' ? ' (encerrada)' : ''),
+        })),
+      ]}
+    />
   )
 }

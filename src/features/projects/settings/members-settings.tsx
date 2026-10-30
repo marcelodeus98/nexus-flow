@@ -1,12 +1,20 @@
-import { PlusIcon, XIcon } from 'lucide-react'
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  Select,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core'
+import { IconPlus, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { useActiveUsers, useTeams } from '@/features/admin/api'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { toast } from '@/shared/notify/toast'
 import {
   roleLabels,
   useProjectMembers,
@@ -16,7 +24,7 @@ import {
   type ProjectRole,
 } from '../api'
 
-const roles = Object.keys(roleLabels) as ProjectRole[]
+const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({ value, label }))
 
 function RoleSelect({
   value,
@@ -28,18 +36,15 @@ function RoleSelect({
   label: string
 }) {
   return (
-    <Select value={value} onValueChange={(role) => onChange(role as ProjectRole)}>
-      <SelectTrigger size="sm" className="w-40" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {roles.map((role) => (
-          <SelectItem key={role} value={role}>
-            {roleLabels[role]}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      size="xs"
+      w={170}
+      aria-label={label}
+      value={value}
+      onChange={(role) => role && onChange(role as ProjectRole)}
+      allowDeselect={false}
+      data={roleOptions}
+    />
   )
 }
 
@@ -51,8 +56,8 @@ export function MembersSettings({ project }: { project: Project }) {
   const teams = useTeams()
   const setMembers = useSetMembers(project.id)
   const setTeams = useSetTeams(project.id)
-  const [newUserId, setNewUserId] = useState<string>()
-  const [newTeamId, setNewTeamId] = useState<string>()
+  const [newUserId, setNewUserId] = useState<string | null>(null)
+  const [newTeamId, setNewTeamId] = useState<string | null>(null)
 
   const direct = (members.data?.members ?? []).filter((m) => m.direct)
   const viaTeams = (members.data?.members ?? []).filter((m) => !m.direct)
@@ -71,28 +76,32 @@ export function MembersSettings({ project }: { project: Project }) {
   const teamCandidates = (teams.data ?? []).filter((t) => !linkedTeams.some((l) => l.id === t.id))
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <section className="space-y-3">
-        <h3 className="font-medium">Membros diretos</h3>
-        <div className="rounded-lg border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pessoa</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead className="w-10">
-                  <span className="sr-only">Remover</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+    <Stack gap="xl" maw={768}>
+      <Stack gap="sm">
+        <Title order={5}>Membros diretos</Title>
+        <Paper withBorder radius="md">
+          <Table verticalSpacing="xs">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Pessoa</Table.Th>
+                <Table.Th>Papel</Table.Th>
+                <Table.Th w={40}>
+                  <span className="visually-hidden">Remover</span>
+                </Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {direct.map((member) => (
-                <TableRow key={member.user.id}>
-                  <TableCell>
-                    <div className="font-medium">{member.user.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.user.email}</div>
-                  </TableCell>
-                  <TableCell>
+                <Table.Tr key={member.user.id}>
+                  <Table.Td>
+                    <Text size="sm" fw={500}>
+                      {member.user.name}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {member.user.email}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
                     <RoleSelect
                       value={member.role}
                       label={`Papel de ${member.user.name}`}
@@ -102,69 +111,64 @@ export function MembersSettings({ project }: { project: Project }) {
                         )
                       }
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
+                  </Table.Td>
+                  <Table.Td>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
                       aria-label={`Remover ${member.user.name}`}
                       onClick={() =>
                         saveMembers(directList.filter((m) => m.userId !== member.user.id))
                       }
                     >
-                      <XIcon />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                      <IconX size={16} />
+                    </ActionIcon>
+                  </Table.Td>
+                </Table.Tr>
               ))}
-            </TableBody>
+            </Table.Tbody>
           </Table>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={newUserId ?? ''} onValueChange={setNewUserId}>
-            <SelectTrigger className="w-64" aria-label="Pessoa para adicionar">
-              <SelectValue placeholder="Adicionar pessoa…" />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        </Paper>
+        <Group gap="xs">
+          <Select
+            w={260}
+            aria-label="Pessoa para adicionar"
+            placeholder="Adicionar pessoa…"
+            searchable
+            value={newUserId}
+            onChange={setNewUserId}
+            data={candidates.map((user) => ({ value: user.id, label: user.name }))}
+          />
           <Button
-            variant="outline"
+            variant="default"
+            leftSection={<IconPlus size={16} />}
             disabled={!newUserId || setMembers.isPending}
             onClick={() => {
               if (!newUserId) return
               saveMembers([...directList, { userId: newUserId, role: 'DEVELOPER' }])
-              setNewUserId(undefined)
+              setNewUserId(null)
             }}
           >
-            <PlusIcon /> Adicionar como desenvolvedor
+            Adicionar como desenvolvedor
           </Button>
-        </div>
-      </section>
+        </Group>
+      </Stack>
 
-      <section className="space-y-3">
-        <h3 className="font-medium">Times</h3>
-        <p className="text-sm text-muted-foreground">
+      <Stack gap="sm">
+        <Title order={5}>Times</Title>
+        <Text size="sm" c="dimmed">
           Todas as pessoas do time recebem o papel escolhido. Quem também é membro direto fica com o
           papel direto.
-        </p>
-        <ul className="space-y-2">
-          {linkedTeams.map((team) => (
-            <li
-              key={team.id}
-              className="flex items-center gap-3 rounded-lg border bg-background p-2"
-            >
-              <span className="flex-1 font-medium">
+        </Text>
+        {linkedTeams.map((team) => (
+          <Paper key={team.id} withBorder radius="md" p="xs">
+            <Group gap="sm" wrap="nowrap">
+              <Text size="sm" fw={500} style={{ flex: 1 }}>
                 {team.name}{' '}
-                <span className="text-xs font-normal text-muted-foreground">
+                <Text span size="xs" c="dimmed" fw={400}>
                   ({team.memberCount} pessoas)
-                </span>
-              </span>
+                </Text>
+              </Text>
               <RoleSelect
                 value={team.role}
                 label={`Papel do time ${team.name}`}
@@ -172,54 +176,52 @@ export function MembersSettings({ project }: { project: Project }) {
                   saveTeams(teamList.map((t) => (t.teamId === team.id ? { ...t, role } : t)))
                 }
               />
-              <Button
-                variant="ghost"
-                size="icon-sm"
+              <ActionIcon
+                variant="subtle"
+                color="gray"
                 aria-label={`Desvincular ${team.name}`}
                 onClick={() => saveTeams(teamList.filter((t) => t.teamId !== team.id))}
               >
-                <XIcon />
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap gap-2">
-          <Select value={newTeamId ?? ''} onValueChange={setNewTeamId}>
-            <SelectTrigger className="w-64" aria-label="Time para vincular">
-              <SelectValue placeholder="Vincular time…" />
-            </SelectTrigger>
-            <SelectContent>
-              {teamCandidates.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  {team.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                <IconX size={16} />
+              </ActionIcon>
+            </Group>
+          </Paper>
+        ))}
+        <Group gap="xs">
+          <Select
+            w={260}
+            aria-label="Time para vincular"
+            placeholder="Vincular time…"
+            value={newTeamId}
+            onChange={setNewTeamId}
+            data={teamCandidates.map((team) => ({ value: team.id, label: team.name }))}
+          />
           <Button
-            variant="outline"
+            variant="default"
+            leftSection={<IconPlus size={16} />}
             disabled={!newTeamId || setTeams.isPending}
             onClick={() => {
               if (!newTeamId) return
               saveTeams([...teamList, { teamId: newTeamId, role: 'DEVELOPER' }])
-              setNewTeamId(undefined)
+              setNewTeamId(null)
             }}
           >
-            <PlusIcon /> Vincular como desenvolvedores
+            Vincular como desenvolvedores
           </Button>
-        </div>
+        </Group>
         {viaTeams.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            Pelos times:{' '}
-            {viaTeams.map((m, i) => (
-              <span key={m.user.id}>
-                {i > 0 && ', '}
-                {m.user.name} <Badge variant="secondary">{roleLabels[m.role]}</Badge>
-              </span>
+          <Group gap={6}>
+            <Text size="sm" c="dimmed">
+              Pelos times:
+            </Text>
+            {viaTeams.map((m) => (
+              <Badge key={m.user.id} color="gray" variant="light" tt="none">
+                {m.user.name} · {roleLabels[m.role]}
+              </Badge>
             ))}
-          </p>
+          </Group>
         )}
-      </section>
-    </div>
+      </Stack>
+    </Stack>
   )
 }

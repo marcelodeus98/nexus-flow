@@ -1,26 +1,27 @@
-import { PlusIcon } from 'lucide-react'
+import {
+  Badge,
+  Button,
+  Group,
+  Modal,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+} from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router'
-import { toast } from 'sonner'
-import { FormField } from '@/features/admin/form-field'
-import { useBoard, type CardSummary } from '@/features/board/api'
+import { Link } from 'react-router-dom'
+import { toast } from '@/shared/notify/toast'
+import { useBoardOverview, type CardSummary } from '@/features/board/api'
 import { estimateLabel } from '@/features/board/card-format'
 import { useCan } from '@/features/projects/api'
 import { useCurrentProject } from '@/features/projects/project-context'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Textarea } from '@/shared/ui/textarea'
+import './backlog-page.css'
 import {
   formatDay,
   statusLabels,
@@ -41,7 +42,8 @@ const BACKLOG = 'backlog'
 export function BacklogPage() {
   const project = useCurrentProject()
   const can = useCan(project.key)
-  const board = useBoard(project.id)
+  // Sprints span the project: cards of every board.
+  const board = useBoardOverview(project.id)
   const sprints = useSprints(project.id)
   const readOnly = project.status === 'ARCHIVED'
   const canManage = !readOnly && can('sprint:manage')
@@ -65,7 +67,15 @@ export function BacklogPage() {
   const doneColumns = new Set(
     (board.data?.columns ?? []).filter((c) => c.category === 'DONE').map((c) => c.id),
   )
-  const columnNames = new Map((board.data?.columns ?? []).map((c) => [c.id, c.name]))
+  // With several boards the column says which board it is on.
+  const boardNames = new Map((board.data?.boards ?? []).map((b) => [b.id, b.name]))
+  const manyBoards = boardNames.size > 1
+  const columnNames = new Map(
+    (board.data?.columns ?? []).map((c) => [
+      c.id,
+      manyBoards ? `${boardNames.get(c.boardId)} · ${c.name}` : c.name,
+    ]),
+  )
 
   const open = (sprints.data ?? []).filter((s) => s.status !== 'CLOSED')
   const closed = (sprints.data ?? []).filter((s) => s.status === 'CLOSED')
@@ -83,21 +93,25 @@ export function BacklogPage() {
   )
 
   if (board.isPending || sprints.isPending) {
-    return <p className="text-sm text-muted-foreground">Carregando…</p>
+    return (
+      <Text size="sm" c="dimmed">
+        Carregando…
+      </Text>
+    )
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
+    <Stack gap="lg">
+      <Group justify="space-between" gap="md">
+        <Text size="sm" c="dimmed">
           Planeje as sprints movendo cards do backlog. Só uma sprint fica em andamento por vez.
-        </p>
+        </Text>
         {canManage && (
-          <Button onClick={() => setEditing(null)}>
-            <PlusIcon /> Nova sprint
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing(null)}>
+            Nova sprint
           </Button>
         )}
-      </div>
+      </Group>
 
       {open.map((sprint) => {
         const cards = ordered.filter((card) => card.sprintId === sprint.id)
@@ -109,7 +123,11 @@ export function BacklogPage() {
               sprint.goal ? ` · ${sprint.goal}` : ''
             }`}
             badge={
-              <Badge variant={sprint.status === 'ACTIVE' ? 'default' : 'secondary'}>
+              <Badge
+                size="sm"
+                variant={sprint.status === 'ACTIVE' ? 'filled' : 'light'}
+                color={sprint.status === 'ACTIVE' ? undefined : 'gray'}
+              >
                 {statusLabels[sprint.status]}
               </Badge>
             }
@@ -117,26 +135,32 @@ export function BacklogPage() {
             actions={
               <>
                 {sprint.status === 'ACTIVE' && (
-                  <Button size="sm" variant="ghost" asChild>
-                    <Link to={`/p/${project.key}/sprints/${sprint.id}`}>Burndown</Link>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    component={Link}
+                    to={`/p/${project.key}/sprints/${sprint.id}`}
+                  >
+                    Burndown
                   </Button>
                 )}
                 {canManage && (
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(sprint)}>
+                  <Button size="xs" variant="subtle" onClick={() => setEditing(sprint)}>
                     Editar
                   </Button>
                 )}
                 {canManage && sprint.status === 'PLANNED' && (
                   <>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      size="xs"
+                      variant="subtle"
+                      color="red"
                       onClick={() => remove.mutate(sprint.id, { onError })}
                     >
                       Excluir
                     </Button>
                     <Button
-                      size="sm"
+                      size="xs"
                       disabled={hasActive || start.isPending}
                       title={hasActive ? 'Encerre a sprint em andamento primeiro' : undefined}
                       onClick={() => start.mutate(sprint.id, { onError })}
@@ -146,7 +170,7 @@ export function BacklogPage() {
                   </>
                 )}
                 {canManage && sprint.status === 'ACTIVE' && (
-                  <Button size="sm" onClick={() => setClosing(sprint)}>
+                  <Button size="xs" onClick={() => setClosing(sprint)}>
                     Encerrar
                   </Button>
                 )}
@@ -171,22 +195,33 @@ export function BacklogPage() {
       </Panel>
 
       {closed.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Sprints encerradas</h2>
-          <ul className="divide-y rounded-lg border bg-background text-sm">
-            {closed.map((sprint) => (
-              <li key={sprint.id} className="flex items-center gap-3 px-3 py-2">
-                <span className="flex-1 font-medium">{sprint.name}</span>
-                <span className="text-muted-foreground">
-                  {formatDay(sprint.startDate)} a {formatDay(sprint.endDate)}
-                </span>
-                <Button size="sm" variant="ghost" asChild>
-                  <Link to={`/p/${project.key}/sprints/${sprint.id}`}>Relatório</Link>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Stack gap="xs">
+          <Text size="sm" fw={500} c="dimmed">
+            Sprints encerradas
+          </Text>
+          <Paper withBorder radius="md">
+            <ul className="backlog__rows">
+              {closed.map((sprint) => (
+                <li key={sprint.id}>
+                  <Text size="sm" fw={500} style={{ flex: 1 }}>
+                    {sprint.name}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {formatDay(sprint.startDate)} a {formatDay(sprint.endDate)}
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    component={Link}
+                    to={`/p/${project.key}/sprints/${sprint.id}`}
+                  >
+                    Relatório
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Paper>
+        </Stack>
       )}
 
       {editing !== undefined && (
@@ -208,7 +243,7 @@ export function BacklogPage() {
           onClose={() => setClosing(undefined)}
         />
       )}
-    </div>
+    </Stack>
   )
 
   function totalsOf(cards: CardSummary[]) {
@@ -234,24 +269,35 @@ function Panel({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-xl border bg-background">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="flex items-center gap-2 font-semibold">
-            {title} {badge}
-          </h2>
-          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">{totals}</span>
-        {actions && <div className="flex gap-1">{actions}</div>}
-      </header>
-      <ul className="divide-y">{children}</ul>
-    </section>
+    <Paper withBorder radius="md" component="section">
+      <Group gap="sm" px="md" py="sm" className="backlog__panel-header">
+        <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+          <Group gap="xs">
+            <Title order={4}>{title}</Title>
+            {badge}
+          </Group>
+          <Text size="xs" c="dimmed" truncate>
+            {subtitle}
+          </Text>
+        </Stack>
+        <Text size="xs" c="dimmed">
+          {totals}
+        </Text>
+        {actions && <Group gap={4}>{actions}</Group>}
+      </Group>
+      <ul className="backlog__rows">{children}</ul>
+    </Paper>
   )
 }
 
 function EmptyRow({ children }: { children: ReactNode }) {
-  return <li className="px-4 py-3 text-sm text-muted-foreground">{children}</li>
+  return (
+    <li>
+      <Text size="sm" c="dimmed">
+        {children}
+      </Text>
+    </li>
+  )
 }
 
 function CardRow({
@@ -269,7 +315,8 @@ function CardRow({
   const setCards = useSetSprintCards(project.id)
   const estimate = estimateLabel(card, project.defaultEstimateView)
 
-  function moveTo(target: string) {
+  function moveTo(target: string | null) {
+    if (!target) return
     const onError = (error: unknown) => toast.error(apiErrorMessage(error))
     if (target === BACKLOG) {
       if (card.sprintId)
@@ -280,37 +327,33 @@ function CardRow({
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
-      <Link to={`/p/${project.key}/c/${card.number}`} className="min-w-0 flex-1 hover:underline">
-        <span className="font-mono text-xs text-muted-foreground">
+    <li>
+      <Link to={`/p/${project.key}/c/${card.number}`} className="backlog__card-link">
+        <Text span size="xs" c="dimmed" ff="monospace">
           {project.key}-{card.number}
-        </span>{' '}
+        </Text>{' '}
         {card.title}
       </Link>
-      <span className="text-xs text-muted-foreground">{columnName}</span>
-      <span className="w-14 text-right text-xs tabular-nums">{estimate ?? '—'}</span>
+      <Text span size="xs" c="dimmed">
+        {columnName}
+      </Text>
+      <Text span size="xs" w={56} ta="right">
+        {estimate ?? '—'}
+      </Text>
       {editable && (
         <Select
+          size="xs"
+          w={160}
+          aria-label={`Mover ${project.key}-${card.number} para`}
           value={card.sprintId ?? BACKLOG}
-          onValueChange={moveTo}
+          onChange={moveTo}
           disabled={setCards.isPending}
-        >
-          <SelectTrigger
-            size="sm"
-            className="w-40"
-            aria-label={`Mover ${project.key}-${card.number} para`}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={BACKLOG}>Backlog</SelectItem>
-            {sprints.map((sprint) => (
-              <SelectItem key={sprint.id} value={sprint.id}>
-                {sprint.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          allowDeselect={false}
+          data={[
+            { value: BACKLOG, label: 'Backlog' },
+            ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
+          ]}
+        />
       )}
     </li>
   )
@@ -351,53 +394,50 @@ function SprintDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={submit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>{sprint ? 'Editar sprint' : 'Nova sprint'}</DialogTitle>
-          </DialogHeader>
-          <FormField label="Nome">
-            <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
-          </FormField>
-          <FormField label="Objetivo">
-            <Textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              rows={2}
-              maxLength={500}
-            />
-          </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Início">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-              />
-            </FormField>
-            <FormField label="Fim">
-              <Input
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-              />
-            </FormField>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={save.isPending}>
-              Salvar
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Modal opened onClose={onClose} title={sprint ? 'Editar sprint' : 'Nova sprint'}>
+      <Stack component="form" gap="md" onSubmit={submit}>
+        <TextInput
+          label="Nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          required
+        />
+        <Textarea
+          label="Objetivo"
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          autosize
+          minRows={2}
+          maxLength={500}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <TextInput
+            label="Início"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            required
+          />
+          <TextInput
+            label="Fim"
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(e) => setEndDate(e.target.value)}
+            required
+          />
+        </SimpleGrid>
+        <Group justify="flex-end" mt="sm">
+          <Button variant="default" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={save.isPending}>
+            Salvar
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }
 
@@ -418,41 +458,35 @@ function CloseSprintDialog({
   const [destination, setDestination] = useState(planned[0]?.id ?? BACKLOG)
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Encerrar {sprint.name}?</DialogTitle>
-          <DialogDescription>
-            {unfinished === 0
-              ? 'Todos os cards foram concluídos.'
-              : `${unfinished} card(s) não foram concluídos. Para onde eles vão?`}
-          </DialogDescription>
-        </DialogHeader>
+    <Modal opened onClose={onClose} title={`Encerrar ${sprint.name}?`}>
+      <Stack gap="md">
+        <Text size="sm">
+          {unfinished === 0
+            ? 'Todos os cards foram concluídos.'
+            : `${unfinished} card(s) não foram concluídos. Para onde eles vão?`}
+        </Text>
         {unfinished > 0 && (
-          <Select value={destination} onValueChange={setDestination}>
-            <SelectTrigger className="w-full" aria-label="Destino dos cards não concluídos">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={BACKLOG}>Voltar para o backlog</SelectItem>
-              {planned.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  Passar para {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Select
+            aria-label="Destino dos cards não concluídos"
+            value={destination}
+            onChange={(value) => value && setDestination(value)}
+            allowDeselect={false}
+            data={[
+              { value: BACKLOG, label: 'Voltar para o backlog' },
+              ...planned.map((s) => ({ value: s.id, label: `Passar para ${s.name}` })),
+            ]}
+          />
         )}
-        <p className="text-sm text-muted-foreground">
+        <Text size="sm" c="dimmed">
           O relatório da sprint guarda como cada card terminou, quanto escopo entrou depois do
           início e o tempo registrado.
-        </p>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        </Text>
+        <Group justify="flex-end" mt="sm">
+          <Button variant="default" onClick={onClose}>
             Cancelar
           </Button>
           <Button
-            disabled={close.isPending}
+            loading={close.isPending}
             onClick={() =>
               close.mutate(
                 { id: sprint.id, nextSprintId: destination === BACKLOG ? null : destination },
@@ -468,8 +502,8 @@ function CloseSprintDialog({
           >
             Encerrar sprint
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

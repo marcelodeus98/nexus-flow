@@ -1,0 +1,17 @@
+.test-cases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.test-cases > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.test-cases > li + li {
+  border-top: 1px solid var(--nexa-border);
+}

@@ -14,6 +14,10 @@ const card = (id: string, rank: string, version = 1, columnId = 'c1'): CardSumma
   rank,
   sprintId: null,
   parentId: null,
+  type: 'TASK',
+  bugSeverity: null,
+  qaStatus: null,
+  rejectionCount: 0,
   version,
   updatedAt: '2026-10-29T00:00:00.000Z',
   assigneeIds: [],
@@ -23,18 +27,26 @@ const card = (id: string, rank: string, version = 1, columnId = 'c1'): CardSumma
   checklistDone: 0,
 })
 
+const column = (id: string) => ({
+  id,
+  name: id,
+  rank: 'a0',
+  category: 'TODO' as const,
+  wipLimit: null,
+})
+
 function clientWith(cards: CardSummary[]) {
   const client = new QueryClient()
-  client.setQueryData<Board>(boardKeys.board('p1'), {
+  client.setQueryData<Board>(boardKeys.board('p1', 'b1'), {
     board: { id: 'b1', name: 'Board' },
-    columns: [],
+    columns: [column('c1')],
     cards,
   })
   return client
 }
 
 const titles = (client: QueryClient) =>
-  client.getQueryData<Board>(boardKeys.board('p1'))!.cards.map((c) => `${c.id}@${c.version}`)
+  client.getQueryData<Board>(boardKeys.board('p1', 'b1'))!.cards.map((c) => `${c.id}@${c.version}`)
 
 describe('board cache', () => {
   it('orders ranks byte by byte, like the database', () => {
@@ -55,6 +67,14 @@ describe('board cache', () => {
     const client = clientWith([card('a', 'a5', 3)])
     upsertCard(client, 'p1', card('a', 'a0', 2))
     expect(titles(client)).toEqual(['a@3'])
+  })
+
+  it('takes a card off the board when it moves to another board', () => {
+    const client = clientWith([card('a', 'a0'), card('b', 'a1')])
+    upsertCard(client, 'p1', card('a', 'a0', 2, 'elsewhere'))
+    expect(titles(client)).toEqual(['b@1'])
+    upsertCard(client, 'p1', card('x', 'a0', 1, 'elsewhere'))
+    expect(titles(client)).toEqual(['b@1'])
   })
 
   it('removes deleted cards', () => {

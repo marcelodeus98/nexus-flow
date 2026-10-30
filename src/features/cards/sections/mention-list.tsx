@@ -42,20 +42,14 @@ export function MentionList({
   }))
 
   return (
-    <ul
-      role="listbox"
-      aria-label="Mencionar pessoa"
-      className="max-h-56 w-56 overflow-y-auto rounded-lg border bg-popover p-1 text-sm shadow-md"
-    >
-      {items.length === 0 && (
-        <li className="px-2 py-1.5 text-muted-foreground">Ninguém encontrado</li>
-      )}
+    <ul role="listbox" aria-label="Mencionar pessoa" className="mention-list">
+      {items.length === 0 && <li className="mention-list__empty">Ninguém encontrado</li>}
       {items.map((item, index) => (
         <li
           key={item.id}
           role="option"
           aria-selected={index === selected}
-          className={`cursor-pointer rounded-md px-2 py-1.5 ${index === selected ? 'bg-accent' : ''}`}
+          className="mention-list__item"
           onMouseDown={(event) => {
             event.preventDefault()
             command(item)

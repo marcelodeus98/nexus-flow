@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router-dom'
 import type { CardSummary } from './api'
 import { isoDay } from './card-format'
 
@@ -11,9 +11,20 @@ export type BoardFilter = {
   priority: string
   department: string
   due: string // ANY | 'overdue' | 'week' | 'none'
+  type: string // ANY | 'TASK' | 'BUG'
+  severity: string // ANY | a bug severity (implies bugs)
 }
 
-const names: (keyof BoardFilter)[] = ['q', 'assignee', 'tag', 'priority', 'department', 'due']
+const names: (keyof BoardFilter)[] = [
+  'q',
+  'assignee',
+  'tag',
+  'priority',
+  'department',
+  'due',
+  'type',
+  'severity',
+]
 
 // Filters live in the URL (?q=&assignee=…), so a filtered board is a link.
 export function useBoardFilter() {
@@ -67,6 +78,8 @@ export function matchesFilter(
     }
   }
   if (filter.tag !== ANY && !card.tagIds.includes(filter.tag)) return false
+  if (filter.type !== ANY && card.type !== filter.type) return false
+  if (filter.severity !== ANY && card.bugSeverity !== filter.severity) return false
   if (filter.priority !== ANY && card.priority !== filter.priority) return false
   if (
     filter.department !== ANY &&

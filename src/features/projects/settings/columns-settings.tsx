@@ -1,7 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import {
+  ActionIcon,
+  Button,
+  Group,
+  NumberInput,
+  Paper,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core'
+import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import {
   boardKeys,
   categoryLabels,
@@ -11,18 +22,15 @@ import {
 } from '@/features/board/api'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import type { Project } from '../api'
 
-const categories = Object.keys(categoryLabels) as ColumnCategory[]
+const categoryOptions = Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))
 
 function useColumnMutation<T>(projectId: string, request: (input: T) => Promise<unknown>) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: request,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: boardKeys.board(projectId) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) }),
     onError: (error) =>
       toast.error(
         apiErrorMessage(error, {
@@ -34,12 +42,12 @@ function useColumnMutation<T>(projectId: string, request: (input: T) => Promise<
 
 // The category says what a column means (to do, in progress, done...), so
 // reports and future rules work whatever the column is called.
-export function ColumnsSettings({ project }: { project: Project }) {
-  const board = useBoard(project.id)
+export function ColumnsSettings({ project, boardId }: { project: Project; boardId: string }) {
+  const board = useBoard(project.id, boardId)
   const create = useColumnMutation(
     project.id,
     (input: { name: string; category: ColumnCategory }) =>
-      http(`/boards/${project.defaultBoardId}/columns`, {
+      http(`/boards/${boardId}/columns`, {
         method: 'POST',
         body: JSON.stringify(input),
       }),
@@ -66,106 +74,106 @@ export function ColumnsSettings({ project }: { project: Project }) {
   }
 
   return (
-    <div className="max-w-3xl space-y-4">
-      <ol className="space-y-2">
+    <Stack gap="md" maw={768}>
+      <Stack gap="xs">
         {columns.map((column, index) => (
-          <li
+          <Paper
             key={`${column.id}-${column.name}-${column.wipLimit}`}
-            className="flex flex-wrap items-center gap-2 rounded-lg border bg-background p-2"
+            withBorder
+            radius="md"
+            p="xs"
           >
-            <div className="flex">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Mover ${column.name} para a esquerda`}
-                disabled={index === 0 || reorder.isPending}
-                onClick={() =>
-                  reorder.mutate({
-                    id: column.id,
-                    afterId: columns[index - 2]?.id,
-                    beforeId: columns[index - 1].id,
-                  })
+            <Group gap="xs">
+              <Group gap={0}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  aria-label={`Mover ${column.name} para a esquerda`}
+                  disabled={index === 0 || reorder.isPending}
+                  onClick={() =>
+                    reorder.mutate({
+                      id: column.id,
+                      afterId: columns[index - 2]?.id,
+                      beforeId: columns[index - 1].id,
+                    })
+                  }
+                >
+                  <IconArrowUp size={16} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  aria-label={`Mover ${column.name} para a direita`}
+                  disabled={index === columns.length - 1 || reorder.isPending}
+                  onClick={() =>
+                    reorder.mutate({
+                      id: column.id,
+                      afterId: columns[index + 1].id,
+                      beforeId: columns[index + 2]?.id,
+                    })
+                  }
+                >
+                  <IconArrowDown size={16} />
+                </ActionIcon>
+              </Group>
+              <TextInput
+                defaultValue={column.name}
+                aria-label="Nome da coluna"
+                maxLength={40}
+                size="xs"
+                w={180}
+                onBlur={(e) => {
+                  const name = e.target.value.trim()
+                  if (name && name !== column.name) update.mutate({ id: column.id, name })
+                }}
+              />
+              <Select
+                size="xs"
+                w={150}
+                aria-label={`Categoria de ${column.name}`}
+                value={column.category}
+                onChange={(category) =>
+                  category && update.mutate({ id: column.id, category: category as ColumnCategory })
                 }
+                allowDeselect={false}
+                data={categoryOptions}
+              />
+              <NumberInput
+                size="xs"
+                w={120}
+                min={1}
+                max={999}
+                defaultValue={column.wipLimit ?? ''}
+                placeholder="Sem limite"
+                aria-label={`Limite de WIP de ${column.name}`}
+                title="Limite de WIP"
+                onBlur={(e) => {
+                  const wipLimit = e.target.value === '' ? null : Number(e.target.value)
+                  if (wipLimit !== column.wipLimit) update.mutate({ id: column.id, wipLimit })
+                }}
+              />
+              <Text size="xs" c="dimmed">
+                {(counts.get(column.id) ?? 0) === 1
+                  ? '1 card'
+                  : `${counts.get(column.id) ?? 0} cards`}
+              </Text>
+              <ActionIcon
+                ml="auto"
+                variant="subtle"
+                color="red"
+                aria-label={`Excluir ${column.name}`}
+                disabled={remove.isPending}
+                onClick={() => remove.mutate(column.id)}
               >
-                <ArrowUpIcon />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Mover ${column.name} para a direita`}
-                disabled={index === columns.length - 1 || reorder.isPending}
-                onClick={() =>
-                  reorder.mutate({
-                    id: column.id,
-                    afterId: columns[index + 1].id,
-                    beforeId: columns[index + 2]?.id,
-                  })
-                }
-              >
-                <ArrowDownIcon />
-              </Button>
-            </div>
-            <Input
-              defaultValue={column.name}
-              aria-label="Nome da coluna"
-              maxLength={40}
-              className="h-8 w-44"
-              onBlur={(e) => {
-                const name = e.target.value.trim()
-                if (name && name !== column.name) update.mutate({ id: column.id, name })
-              }}
-            />
-            <Select
-              value={column.category}
-              onValueChange={(category) =>
-                update.mutate({ id: column.id, category: category as ColumnCategory })
-              }
-            >
-              <SelectTrigger size="sm" className="w-36" aria-label={`Categoria de ${column.name}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {categoryLabels[category]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min={1}
-              max={999}
-              defaultValue={column.wipLimit ?? ''}
-              placeholder="Sem limite"
-              aria-label={`Limite de WIP de ${column.name}`}
-              title="Limite de WIP"
-              className="h-8 w-28"
-              onBlur={(e) => {
-                const wipLimit = e.target.value === '' ? null : Number(e.target.value)
-                if (wipLimit !== column.wipLimit) update.mutate({ id: column.id, wipLimit })
-              }}
-            />
-            <span className="text-xs text-muted-foreground">
-              {(counts.get(column.id) ?? 0) === 1
-                ? '1 card'
-                : `${counts.get(column.id) ?? 0} cards`}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="ml-auto"
-              aria-label={`Excluir ${column.name}`}
-              disabled={remove.isPending}
-              onClick={() => remove.mutate(column.id)}
-            >
-              <Trash2Icon />
-            </Button>
-          </li>
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          </Paper>
         ))}
-      </ol>
-      <form
-        className="flex gap-2"
+      </Stack>
+      <Group
+        component="form"
+        gap="xs"
         onSubmit={(event) => {
           event.preventDefault()
           const name = newName.trim()
@@ -173,22 +181,27 @@ export function ColumnsSettings({ project }: { project: Project }) {
           create.mutate({ name, category: 'TODO' }, { onSuccess: () => setNewName('') })
         }}
       >
-        <Input
+        <TextInput
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="Nova coluna"
           aria-label="Nome da nova coluna"
           maxLength={40}
-          className="w-56"
+          w={240}
         />
-        <Button type="submit" variant="outline" disabled={create.isPending}>
-          <PlusIcon /> Adicionar
+        <Button
+          type="submit"
+          variant="default"
+          leftSection={<IconPlus size={16} />}
+          loading={create.isPending}
+        >
+          Adicionar
         </Button>
-      </form>
-      <p className="text-sm text-muted-foreground">
-        O limite de WIP aparece no board quando é ultrapassado. O bloqueio de entrada chega com as
-        regras de transição.
-      </p>
-    </div>
+      </Group>
+      <Text size="sm" c="dimmed">
+        O limite de WIP aparece no board quando é ultrapassado. Para bloquear a entrada, crie a
+        regra "Respeitar o limite de WIP" na aba Regras.
+      </Text>
+    </Stack>
   )
 }

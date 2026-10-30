@@ -1,12 +1,13 @@
-import { Link } from 'react-router'
+import { Anchor, Stack, Title } from '@mantine/core'
+import { Link } from 'react-router-dom'
 
 export function NotFoundPage() {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold">Página não encontrada</h1>
-      <Link to="/" className="text-blue-600 underline">
+    <Stack gap="xs">
+      <Title order={2}>Página não encontrada</Title>
+      <Anchor component={Link} to="/">
         Voltar ao início
-      </Link>
-    </section>
+      </Anchor>
+    </Stack>
   )
 }

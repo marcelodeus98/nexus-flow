@@ -1,3 +1,4 @@
+import '../rich-text.css'
 import { Fragment, type ReactNode } from 'react'
 
 type Node = {
@@ -12,7 +13,7 @@ type Node = {
 // comment. Unknown node types fall back to their children, so newer content
 // degrades instead of disappearing.
 export function RichTextView({ doc }: { doc: unknown }) {
-  return <div className="space-y-1 text-sm break-words">{render(doc as Node, 'r')}</div>
+  return <div className="rich-text">{render(doc as Node, 'r')}</div>
 }
 
 function render(node: Node, key: string): ReactNode {
@@ -24,33 +25,21 @@ function render(node: Node, key: string): ReactNode {
       return <p key={key}>{children}</p>
     case 'heading':
       return (
-        <p key={key} className="font-semibold">
+        <p key={key} className="rich-text__heading">
           {children}
         </p>
       )
     case 'bulletList':
-      return (
-        <ul key={key} className="list-disc pl-5">
-          {children}
-        </ul>
-      )
+      return <ul key={key}>{children}</ul>
     case 'orderedList':
-      return (
-        <ol key={key} className="list-decimal pl-5">
-          {children}
-        </ol>
-      )
+      return <ol key={key}>{children}</ol>
     case 'listItem':
       return <li key={key}>{children}</li>
     case 'blockquote':
-      return (
-        <blockquote key={key} className="border-l-2 pl-3 text-muted-foreground">
-          {children}
-        </blockquote>
-      )
+      return <blockquote key={key}>{children}</blockquote>
     case 'codeBlock':
       return (
-        <pre key={key} className="overflow-x-auto rounded bg-muted p-2 text-xs">
+        <pre key={key}>
           <code>{children}</code>
         </pre>
       )
@@ -58,7 +47,7 @@ function render(node: Node, key: string): ReactNode {
       return <br key={key} />
     case 'mention':
       return (
-        <span key={key} className="rounded bg-primary/10 px-1 font-medium text-primary">
+        <span key={key} className="rich-text__mention">
           @{String(node.attrs?.label ?? node.attrs?.id ?? '')}
         </span>
       )
@@ -72,7 +61,7 @@ function render(node: Node, key: string): ReactNode {
           case 'strike':
             return <s>{content}</s>
           case 'code':
-            return <code className="rounded bg-muted px-1">{content}</code>
+            return <code>{content}</code>
           default:
             return content
         }

@@ -1,7 +1,6 @@
-import { toast } from 'sonner'
+import { Checkbox, Paper, Stack, Table, Text, Title } from '@mantine/core'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Checkbox } from '@/shared/ui/checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { toast } from '@/shared/notify/toast'
 import { typeLabels, usePreferences, useSetPreferences, type Preference } from './api'
 
 // Each kind of notification, in the app and/or by e-mail. Saved on change.
@@ -16,41 +15,47 @@ export function NotificationPreferencesPage() {
   }
 
   return (
-    <section className="mx-auto max-w-2xl space-y-4">
+    <Stack gap="md">
       <div>
-        <h1 className="text-2xl font-semibold">Notificações</h1>
-        <p className="text-sm text-muted-foreground">
+        <Title order={2}>Notificações</Title>
+        <Text size="sm" c="dimmed">
           Escolha o que você recebe no Nexa Flow e o que também chega por e-mail.
-        </p>
+        </Text>
       </div>
-      <div className="rounded-lg border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Quando</TableHead>
-              <TableHead className="w-24 text-center">No app</TableHead>
-              <TableHead className="w-24 text-center">E-mail</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <Paper withBorder radius="md">
+        <Table verticalSpacing="sm">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Quando</Table.Th>
+              <Table.Th w={96} ta="center">
+                No app
+              </Table.Th>
+              <Table.Th w={96} ta="center">
+                E-mail
+              </Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {preferences.data?.map((preference) => (
-              <TableRow key={preference.type}>
-                <TableCell>{typeLabels[preference.type]}</TableCell>
+              <Table.Tr key={preference.type}>
+                <Table.Td>{typeLabels[preference.type]}</Table.Td>
                 {(['inApp', 'email'] as const).map((channel) => (
-                  <TableCell key={channel} className="text-center">
+                  <Table.Td key={channel}>
                     <Checkbox
+                      mx="auto"
+                      w="fit-content"
                       checked={preference[channel]}
                       disabled={save.isPending}
                       aria-label={`${typeLabels[preference.type]}: ${channel === 'inApp' ? 'no app' : 'e-mail'}`}
-                      onCheckedChange={(checked) => toggle(preference, channel, checked === true)}
+                      onChange={(e) => toggle(preference, channel, e.currentTarget.checked)}
                     />
-                  </TableCell>
+                  </Table.Td>
                 ))}
-              </TableRow>
+              </Table.Tr>
             ))}
-          </TableBody>
+          </Table.Tbody>
         </Table>
-      </div>
-    </section>
+      </Paper>
+    </Stack>
   )
 }

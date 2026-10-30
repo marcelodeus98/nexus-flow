@@ -6,9 +6,11 @@ import {
   type CardPriority,
   type CardSummary,
 } from '@/features/board/api'
+import type { BugSeverity } from '@/features/qa/bug-severity'
 import { http } from '@/shared/api/http'
 
 export type CardDetail = CardSummary & {
+  boardId: string
   description: Record<string, unknown> | null
   createdAt: string
   createdBy: { id: string; name: string } | null
@@ -16,6 +18,26 @@ export type CardDetail = CardSummary & {
   parent: { id: string; number: number; title: string } | null
   children: { id: string; number: number; title: string; columnId: string }[]
   checklist: ChecklistItem[]
+  // Set on bugs (type BUG).
+  bug: BugDetails | null
+  // Bugs QA found while testing this card.
+  bugsFound: {
+    id: string
+    number: number
+    title: string
+    severity: BugSeverity
+    columnName: string
+    open: boolean
+  }[]
+}
+
+export type BugDetails = {
+  severity: BugSeverity
+  environment: string | null
+  steps: string | null
+  expected: string | null
+  actual: string | null
+  foundIn: { id: string; number: number; title: string } | null
 }
 
 export type ChecklistItem = {
@@ -54,6 +76,8 @@ export const cardKeys = {
   comments: (cardId: string) => ['cards', cardId, 'comments'] as const,
   attachments: (cardId: string) => ['cards', cardId, 'attachments'] as const,
   time: (cardId: string) => ['cards', cardId, 'time'] as const,
+  reviews: (cardId: string) => ['cards', cardId, 'reviews'] as const,
+  tests: (cardId: string) => ['cards', cardId, 'tests'] as const,
 }
 
 export function useCardByNumber(projectId: string, number: number) {

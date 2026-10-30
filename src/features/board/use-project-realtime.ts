@@ -20,7 +20,7 @@ export function useProjectRealtime(projectId: string | undefined, projectKey: st
     const onConnect = () => {
       join()
       if (connectedBefore) {
-        void queryClient.invalidateQueries({ queryKey: boardKeys.board(projectId) })
+        void queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) })
       }
       connectedBefore = true
     }
@@ -29,12 +29,22 @@ export function useProjectRealtime(projectId: string | undefined, projectKey: st
       upsertCard(queryClient, projectId, card)
       void queryClient.invalidateQueries({ queryKey: cardKeys.byNumber(projectId, card.number) })
       void queryClient.invalidateQueries({ queryKey: cardKeys.activity(card.id) })
+      void queryClient.invalidateQueries({ queryKey: cardKeys.reviews(card.id) })
+      // A bug's open card lists it under "Bugs encontrados".
+      if (card.type === 'BUG') {
+        void queryClient.invalidateQueries({ queryKey: ['cards', 'number', projectId] })
+      }
     }
     const onCardDeleted = ({ id }: { id: string }) => {
       removeCard(queryClient, projectId, id)
       void queryClient.invalidateQueries({ queryKey: ['cards', 'number', projectId] })
     }
-    const onColumns = () => queryClient.invalidateQueries({ queryKey: boardKeys.board(projectId) })
+    const onColumns = () => queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) })
+    const onBoards = () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: boardKeys.list(projectId) }),
+        queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) }),
+      ])
     const onProject = () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: projectKeys.one(projectKey) }),
@@ -49,6 +59,8 @@ export function useProjectRealtime(projectId: string | undefined, projectKey: st
       ])
     const onComments = ({ cardId }: { cardId: string }) =>
       queryClient.invalidateQueries({ queryKey: cardKeys.comments(cardId) })
+    const onTests = ({ cardId }: { cardId: string }) =>
+      queryClient.invalidateQueries({ queryKey: cardKeys.tests(cardId) })
     const onAttachments = ({ cardId }: { cardId: string }) =>
       queryClient.invalidateQueries({ queryKey: cardKeys.attachments(cardId) })
 
@@ -58,11 +70,13 @@ export function useProjectRealtime(projectId: string | undefined, projectKey: st
     socket.on('card.moved', onCard)
     socket.on('card.deleted', onCardDeleted)
     socket.on('column.changed', onColumns)
+    socket.on('boards.changed', onBoards)
     socket.on('project.changed', onProject)
     socket.on('tags.changed', onTags)
     socket.on('sprint.changed', onSprint)
     socket.on('comment.changed', onComments)
     socket.on('attachments.changed', onAttachments)
+    socket.on('tests.changed', onTests)
     if (socket.connected) join()
 
     return () => {
@@ -73,11 +87,13 @@ export function useProjectRealtime(projectId: string | undefined, projectKey: st
       socket.off('card.moved', onCard)
       socket.off('card.deleted', onCardDeleted)
       socket.off('column.changed', onColumns)
+      socket.off('boards.changed', onBoards)
       socket.off('project.changed', onProject)
       socket.off('tags.changed', onTags)
       socket.off('sprint.changed', onSprint)
       socket.off('comment.changed', onComments)
       socket.off('attachments.changed', onAttachments)
+      socket.off('tests.changed', onTests)
     }
   }, [projectId, projectKey, queryClient])
 }

@@ -1,10 +1,13 @@
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { BoldIcon, ItalicIcon, ListIcon, ListOrderedIcon, CodeIcon } from 'lucide-react'
+import { ActionIcon, Button, Group, Stack, Text } from '@mantine/core'
+import { IconBold, IconCode, IconItalic, IconList, IconListNumbers } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Button } from '@/shared/ui/button'
+import './rich-text.css'
 
 type Doc = Record<string, unknown>
+
+const FORMATS = ['bold', 'italic', 'bulletList', 'orderedList', 'code'] as const
 
 // Rich description stored as a Tiptap document. Read-only until the user
 // clicks it; saving sends the whole document. Mentions arrive with comments.
@@ -27,8 +30,7 @@ export function DescriptionEditor({
       editable: editing,
       editorProps: {
         attributes: {
-          class:
-            'prose-sm min-h-24 max-w-none rounded-lg px-3 py-2 outline-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_p]:my-1',
+          class: 'rich-text',
           'aria-label': 'Descrição do card',
         },
       },
@@ -36,8 +38,20 @@ export function DescriptionEditor({
     [editing],
   )
 
-  if (!editor) return null
-  const empty = editor.isEmpty
+  // useEditor does not re-render on each keystroke: what the UI shows about
+  // the document (empty? which formats are on?) comes from useEditorState.
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      empty: current?.isEmpty ?? true,
+      active: Object.fromEntries(
+        FORMATS.map((format) => [format, current?.isActive(format) ?? false]),
+      ) as Record<(typeof FORMATS)[number], boolean>,
+    }),
+  })
+
+  if (!editor || !state) return null
+  const empty = state.empty
 
   if (!editing) {
     return (
@@ -46,12 +60,12 @@ export function DescriptionEditor({
         tabIndex={editable ? 0 : undefined}
         onClick={() => editable && setEditing(true)}
         onKeyDown={(e) => editable && e.key === 'Enter' && setEditing(true)}
-        className={`rounded-lg border border-transparent ${editable ? 'cursor-text hover:border-border' : ''}`}
+        className={`rich-text-view${editable ? ' rich-text-view--editable' : ''}`}
       >
         {empty ? (
-          <p className="px-3 py-2 text-sm text-muted-foreground">
+          <Text size="sm" c="dimmed" px="sm" py="xs">
             {editable ? 'Adicionar uma descrição…' : 'Sem descrição.'}
-          </p>
+          </Text>
         ) : (
           <EditorContent editor={editor} />
         )}
@@ -61,60 +75,60 @@ export function DescriptionEditor({
 
   const toolbar = [
     {
-      icon: BoldIcon,
+      icon: IconBold,
       label: 'Negrito',
       run: () => editor.chain().focus().toggleBold().run(),
-      active: 'bold',
+      active: 'bold' as const,
     },
     {
-      icon: ItalicIcon,
+      icon: IconItalic,
       label: 'Itálico',
       run: () => editor.chain().focus().toggleItalic().run(),
-      active: 'italic',
+      active: 'italic' as const,
     },
     {
-      icon: ListIcon,
+      icon: IconList,
       label: 'Lista',
       run: () => editor.chain().focus().toggleBulletList().run(),
-      active: 'bulletList',
+      active: 'bulletList' as const,
     },
     {
-      icon: ListOrderedIcon,
+      icon: IconListNumbers,
       label: 'Lista numerada',
       run: () => editor.chain().focus().toggleOrderedList().run(),
-      active: 'orderedList',
+      active: 'orderedList' as const,
     },
     {
-      icon: CodeIcon,
+      icon: IconCode,
       label: 'Código',
       run: () => editor.chain().focus().toggleCode().run(),
-      active: 'code',
+      active: 'code' as const,
     },
   ]
 
   return (
-    <div className="space-y-2">
-      <div className="rounded-lg border focus-within:ring-2 focus-within:ring-ring/50">
-        <div className="flex gap-0.5 border-b p-1">
+    <Stack gap="xs">
+      <div className="rich-text-box">
+        <div className="rich-text-box__toolbar">
           {toolbar.map(({ icon: Icon, label, run, active }) => (
-            <Button
+            <ActionIcon
               key={label}
-              type="button"
-              variant={editor.isActive(active) ? 'secondary' : 'ghost'}
-              size="icon-xs"
+              variant={state.active[active] ? 'light' : 'subtle'}
+              color={state.active[active] ? undefined : 'gray'}
+              size="sm"
               aria-label={label}
               onClick={run}
             >
-              <Icon />
-            </Button>
+              <Icon size={14} />
+            </ActionIcon>
           ))}
         </div>
         <EditorContent editor={editor} />
       </div>
-      <div className="flex gap-2">
+      <Group gap="xs">
         <Button
-          size="sm"
-          disabled={saving}
+          size="xs"
+          loading={saving}
           onClick={() => {
             onSave(editor.isEmpty ? null : (editor.getJSON() as Doc))
             setEditing(false)
@@ -123,8 +137,9 @@ export function DescriptionEditor({
           Salvar
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
+          size="xs"
+          variant="subtle"
+          color="gray"
           onClick={() => {
             editor.commands.setContent(value ?? '')
             setEditing(false)
@@ -132,7 +147,7 @@ export function DescriptionEditor({
         >
           Cancelar
         </Button>
-      </div>
-    </div>
+      </Group>
+    </Stack>
   )
 }

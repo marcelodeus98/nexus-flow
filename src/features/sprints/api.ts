@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { http } from '@/shared/api/http'
+import { http, type HttpInit } from '@/shared/api/http'
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'CLOSED'
 export type SprintOutcome = 'COMPLETED' | 'CARRIED_OVER' | 'RETURNED_TO_BACKLOG' | 'REMOVED'
@@ -55,7 +55,7 @@ export const sprintKeys = {
   burndown: (sprintId: string) => ['sprint', sprintId, 'burndown'] as const,
 }
 
-const json = (method: string, body?: unknown): RequestInit => ({
+const json = (method: string, body?: unknown): HttpInit => ({
   method,
   ...(body !== undefined && { body: JSON.stringify(body) }),
 })

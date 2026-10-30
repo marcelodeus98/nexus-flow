@@ -5,7 +5,7 @@ import {
   useQueryClient,
   type QueryKey,
 } from '@tanstack/react-query'
-import { http } from '@/shared/api/http'
+import { http, type HttpInit } from '@/shared/api/http'
 
 // Shapes of /users, /departments and /teams. They move to the orval client
 // generated from the OpenAPI document when it lands.
@@ -56,7 +56,7 @@ export type Team = Omit<TeamSummary, 'memberCount'> & { members: TeamMember[] }
 
 type Page<T> = { items: T[]; nextCursor: string | null }
 
-const json = (method: string, body: unknown): RequestInit => ({
+const json = (method: string, body: unknown): HttpInit => ({
   method,
   body: JSON.stringify(body),
 })

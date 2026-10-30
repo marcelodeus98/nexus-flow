@@ -1,13 +1,14 @@
+import { Anchor, Group, Stack, Text } from '@mantine/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
 import { cardKeys } from '../api'
 import { CommentEditor } from './comment-editor'
 import type { MentionItem } from './mention-list'
 import { RichTextView } from './rich-text-view'
+import { Section } from './section'
 
 type Comment = {
   id: string
@@ -63,18 +64,15 @@ export function CommentsSection({
   const [editing, setEditing] = useState<string>()
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold">
-        Comentários{comments.data?.length ? ` (${comments.data.length})` : ''}
-      </h3>
-      <ol className="space-y-3">
+    <Section title={`Comentários${comments.data?.length ? ` (${comments.data.length})` : ''}`}>
+      <Stack gap="md">
         {comments.data?.map((comment) => (
-          <li key={comment.id} className="space-y-1">
-            <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">
+          <Stack key={comment.id} gap={4}>
+            <Group gap="xs" align="baseline">
+              <Text size="xs" fw={600}>
                 {comment.author?.name ?? 'Pessoa removida'}
-              </span>
-              <span>
+              </Text>
+              <Text size="xs" c="dimmed">
                 {new Date(comment.createdAt).toLocaleString('pt-BR', {
                   day: '2-digit',
                   month: '2-digit',
@@ -82,20 +80,25 @@ export function CommentsSection({
                   minute: '2-digit',
                 })}
                 {comment.editedAt && ' · editado'}
-              </span>
-              <span className="ml-auto flex gap-1">
+              </Text>
+              <Group gap="xs" ml="auto">
                 {comment.author?.id === userId && editing !== comment.id && (
-                  <Button variant="link" size="xs" onClick={() => setEditing(comment.id)}>
+                  <Anchor component="button" size="xs" onClick={() => setEditing(comment.id)}>
                     Editar
-                  </Button>
+                  </Anchor>
                 )}
                 {(comment.author?.id === userId || canModerate) && (
-                  <Button variant="link" size="xs" onClick={() => remove.mutate(comment.id)}>
+                  <Anchor
+                    component="button"
+                    size="xs"
+                    c="red"
+                    onClick={() => remove.mutate(comment.id)}
+                  >
                     Excluir
-                  </Button>
+                  </Anchor>
                 )}
-              </span>
-            </div>
+              </Group>
+            </Group>
             {editing === comment.id ? (
               <CommentEditor
                 members={members}
@@ -111,13 +114,13 @@ export function CommentsSection({
                 }
               />
             ) : (
-              <div className="rounded-lg bg-muted/60 px-3 py-2">
+              <div className="comment-bubble">
                 <RichTextView doc={comment.body} />
               </div>
             )}
-          </li>
+          </Stack>
         ))}
-      </ol>
+      </Stack>
       {canComment && (
         <CommentEditor
           members={members}
@@ -126,6 +129,6 @@ export function CommentsSection({
           onSubmit={(body) => create.mutate(body)}
         />
       )}
-    </section>
+    </Section>
   )
 }

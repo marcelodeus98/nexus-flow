@@ -1,11 +1,20 @@
-import { ArrowLeftIcon } from 'lucide-react'
+import {
+  Anchor,
+  Badge,
+  Group,
+  Paper,
+  SegmentedControl,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams } from 'react-router-dom'
 import { useCurrentProject } from '@/features/projects/project-context'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { formatDay, statusLabels, useBurndown, useSprint, type SprintOutcome } from './api'
 import { BurndownChart, type BurndownUnit } from './burndown-chart'
 
@@ -25,9 +34,18 @@ export function SprintReportPage() {
     project.defaultEstimateView === 'HOURS' ? 'hours' : 'points',
   )
 
-  if (sprint.isPending) return <p className="text-sm text-muted-foreground">Carregando…</p>
+  if (sprint.isPending)
+    return (
+      <Text size="sm" c="dimmed">
+        Carregando…
+      </Text>
+    )
   if (sprint.isError)
-    return <p className="text-sm text-destructive">{apiErrorMessage(sprint.error)}</p>
+    return (
+      <Text size="sm" c="red">
+        {apiErrorMessage(sprint.error)}
+      </Text>
+    )
 
   const s = sprint.data
   const committed = s.history.filter((h) => !h.addedLate)
@@ -65,112 +83,125 @@ export function SprintReportPage() {
   ]
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div className="space-y-1">
-        <Button variant="link" size="sm" className="px-0" asChild>
-          <Link to={`/p/${project.key}/backlog`}>
-            <ArrowLeftIcon /> Backlog
-          </Link>
-        </Button>
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          {s.name}
-          <Badge variant={s.status === 'ACTIVE' ? 'default' : 'secondary'}>
+    <Stack gap="lg">
+      <Stack gap={4}>
+        <Anchor component={Link} to={`/p/${project.key}/backlog`} size="sm">
+          <Group gap={4} component="span">
+            <IconArrowLeft size={14} /> Backlog
+          </Group>
+        </Anchor>
+        <Group gap="xs">
+          <Title order={3}>{s.name}</Title>
+          <Badge
+            variant={s.status === 'ACTIVE' ? 'filled' : 'light'}
+            color={s.status === 'ACTIVE' ? undefined : 'gray'}
+          >
             {statusLabels[s.status]}
           </Badge>
-        </h2>
-        <p className="text-sm text-muted-foreground">
+        </Group>
+        <Text size="sm" c="dimmed">
           {formatDay(s.startDate)} a {formatDay(s.endDate)}
           {s.goal && ` · ${s.goal}`}
-        </p>
-      </div>
+        </Text>
+      </Stack>
 
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
         {figures.map((figure) => (
-          <div key={figure.label} className="rounded-lg border bg-background p-3">
-            <dt className="text-xs text-muted-foreground">{figure.label}</dt>
-            <dd className="text-xl font-semibold">{figure.value}</dd>
-            <dd className="text-xs text-muted-foreground">{figure.detail}</dd>
-          </div>
+          <Paper key={figure.label} withBorder radius="md" p="md">
+            <Text size="xs" c="dimmed">
+              {figure.label}
+            </Text>
+            <Text size="xl" fw={700}>
+              {figure.value}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {figure.detail}
+            </Text>
+          </Paper>
         ))}
-      </dl>
+      </SimpleGrid>
 
-      <section className="space-y-3 rounded-xl border bg-background p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold">Burndown</h3>
-          <div className="flex rounded-md border p-0.5" role="group" aria-label="Unidade">
-            {(['points', 'hours'] as const).map((value) => (
-              <Button
-                key={value}
-                size="xs"
-                variant={unit === value ? 'secondary' : 'ghost'}
-                aria-pressed={unit === value}
-                onClick={() => setUnit(value)}
-              >
-                {value === 'points' ? 'Pontos' : 'Horas'}
-              </Button>
-            ))}
-          </div>
-        </div>
-        {burndown.data ? (
-          <BurndownChart days={burndown.data.days} scope={burndown.data.scope} unit={unit} />
-        ) : (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        )}
-      </section>
+      <Paper withBorder radius="md" p="md">
+        <Stack gap="sm">
+          <Group justify="space-between">
+            <Title order={4}>Burndown</Title>
+            <SegmentedControl
+              size="xs"
+              aria-label="Unidade"
+              value={unit}
+              onChange={(value) => setUnit(value as BurndownUnit)}
+              data={[
+                { value: 'points', label: 'Pontos' },
+                { value: 'hours', label: 'Horas' },
+              ]}
+            />
+          </Group>
+          {burndown.data ? (
+            <BurndownChart days={burndown.data.days} scope={burndown.data.scope} unit={unit} />
+          ) : (
+            <Text size="sm" c="dimmed">
+              Carregando…
+            </Text>
+          )}
+        </Stack>
+      </Paper>
 
-      <section className="space-y-2">
-        <h3 className="font-semibold">Cards da sprint</h3>
-        <div className="rounded-lg border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Card</TableHead>
-                <TableHead>Resultado</TableHead>
-                <TableHead className="text-right">Pontos (início → fim)</TableHead>
-                <TableHead className="text-right">Tempo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <Stack gap="xs">
+        <Title order={4}>Cards da sprint</Title>
+        <Paper withBorder radius="md">
+          <Table verticalSpacing="xs">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Card</Table.Th>
+                <Table.Th>Resultado</Table.Th>
+                <Table.Th ta="right">Pontos (início → fim)</Table.Th>
+                <Table.Th ta="right">Tempo</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {s.history.map((entry) => (
-                <TableRow key={entry.card.id}>
-                  <TableCell className="max-w-72">
+                <Table.Tr key={entry.card.id}>
+                  <Table.Td maw={288}>
                     <Link
                       to={`/p/${project.key}/c/${entry.card.number}`}
-                      className={`hover:underline ${entry.card.deleted ? 'line-through' : ''}`}
+                      className="card-drawer__link"
+                      style={entry.card.deleted ? { textDecoration: 'line-through' } : undefined}
                     >
-                      <span className="font-mono text-xs text-muted-foreground">
+                      <Text span size="xs" c="dimmed" ff="monospace">
                         {project.key}-{entry.card.number}
-                      </span>{' '}
+                      </Text>{' '}
                       {entry.card.title}
                     </Link>
                     {entry.addedLate && (
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" color="gray" size="sm" ml="xs">
                         entrou depois
                       </Badge>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {entry.outcome ? outcomeLabels[entry.outcome] : 'Em andamento'}
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">
+                      {entry.outcome ? outcomeLabels[entry.outcome] : 'Em andamento'}
+                    </Text>
                     {entry.columnAtClose && (
-                      <span className="block text-xs text-muted-foreground">
+                      <Text size="xs" c="dimmed">
                         {entry.columnAtClose}
-                      </span>
+                      </Text>
                     )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  </Table.Td>
+                  <Table.Td ta="right">
                     {entry.pointsAtStart ?? '—'} → {entry.pointsAtEnd ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  </Table.Td>
+                  <Table.Td ta="right">
                     {entry.timeSpentMinutes !== null
                       ? `${Math.round((entry.timeSpentMinutes / 60) * 10) / 10} h`
                       : '—'}
-                  </TableCell>
-                </TableRow>
+                  </Table.Td>
+                </Table.Tr>
               ))}
-            </TableBody>
+            </Table.Tbody>
           </Table>
-        </div>
-      </section>
-    </div>
+        </Paper>
+      </Stack>
+    </Stack>
   )
 }

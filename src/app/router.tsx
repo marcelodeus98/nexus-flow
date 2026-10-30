@@ -1,4 +1,4 @@
-import { createBrowserRouter, redirect } from 'react-router'
+import { createBrowserRouter, redirect } from 'react-router-dom'
 import { ForgotPasswordPage } from '@/features/auth/forgot-password-page'
 import { LoginPage } from '@/features/auth/login-page'
 import { ResetPasswordPage } from '@/features/auth/reset-password-page'
@@ -6,8 +6,19 @@ import { redirectIfSignedIn, requireAdmin, requireSession } from '@/features/aut
 import { BoardPage } from '@/features/board/board-page'
 import { ProjectLayout } from '@/features/projects/project-layout'
 import { ProjectsPage } from '@/features/projects/projects-page'
-import { AppLayout } from './layout'
+import { AppLayout } from './layout/app-layout'
 import { NotFoundPage } from './pages/not-found-page'
+
+const boardChildren = [
+  { index: true, element: null },
+  // The card opens in a drawer over the board.
+  {
+    path: 'c/:cardNumber',
+    lazy: async () => ({
+      Component: (await import('@/features/cards/card-drawer')).CardDrawer,
+    }),
+  },
+]
 
 export const router = createBrowserRouter([
   { path: '/login', loader: redirectIfSignedIn, element: <LoginPage /> },
@@ -23,23 +34,19 @@ export const router = createBrowserRouter([
         path: 'p/:projectKey',
         element: <ProjectLayout />,
         children: [
-          {
-            element: <BoardPage />,
-            children: [
-              { index: true, element: null },
-              // The card opens in a drawer over the board.
-              {
-                path: 'c/:cardNumber',
-                lazy: async () => ({
-                  Component: (await import('@/features/cards/card-drawer')).CardDrawer,
-                }),
-              },
-            ],
-          },
+          // /p/KEY is the default board, /p/KEY/b/:boardId any other one.
+          { element: <BoardPage />, children: boardChildren },
+          { path: 'b/:boardId', element: <BoardPage />, children: boardChildren },
           {
             path: 'backlog',
             lazy: async () => ({
               Component: (await import('@/features/sprints/backlog-page')).BacklogPage,
+            }),
+          },
+          {
+            path: 'tests',
+            lazy: async () => ({
+              Component: (await import('@/features/qa/test-cases-page')).TestCasesPage,
             }),
           },
           {
@@ -63,6 +70,12 @@ export const router = createBrowserRouter([
             }),
           },
         ],
+      },
+      {
+        path: 'qa',
+        lazy: async () => ({
+          Component: (await import('@/features/qa/qa-queue-page')).QaQueuePage,
+        }),
       },
       {
         path: 'admin',
@@ -95,6 +108,12 @@ export const router = createBrowserRouter([
             path: 'teams',
             lazy: async () => ({
               Component: (await import('@/features/admin/teams-page')).TeamsPage,
+            }),
+          },
+          {
+            path: 'tags',
+            lazy: async () => ({
+              Component: (await import('@/features/admin/tags-page')).TagsPage,
             }),
           },
         ],

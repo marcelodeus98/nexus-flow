@@ -1,18 +1,24 @@
+import { Tooltip } from '@mantine/core'
 import { useApiHealth } from './use-api-health'
 
+// A dot in the top bar: green while the API and the database answer.
 export function ApiStatus() {
   const { data, isPending, isError } = useApiHealth()
 
   const state = isPending
-    ? { label: 'Verificando API…', dot: 'bg-slate-400' }
+    ? { label: 'Verificando API…', color: 'var(--nexa-slate-400)' }
     : isError || data.status !== 'ok'
-      ? { label: 'API indisponível', dot: 'bg-red-500' }
-      : { label: 'API e banco operando', dot: 'bg-emerald-500' }
+      ? { label: 'API indisponível', color: 'var(--mantine-color-red-6)' }
+      : { label: 'API e banco operando', color: 'var(--nexa-teal)' }
 
   return (
-    <p role="status" className="inline-flex items-center gap-2 text-sm text-slate-600">
-      <span className={`size-2 rounded-full ${state.dot}`} aria-hidden />
-      {state.label}
-    </p>
+    <Tooltip label={state.label}>
+      <span role="status" aria-label={state.label} style={{ display: 'inline-flex' }}>
+        <span
+          aria-hidden
+          style={{ width: 8, height: 8, borderRadius: '50%', background: state.color }}
+        />
+      </span>
+    </Tooltip>
   )
 }

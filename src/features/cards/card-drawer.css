@@ -1,0 +1,109 @@
+.card-drawer__fields {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.card-drawer__label {
+  color: var(--nexa-slate);
+}
+
+.card-drawer__value {
+  min-width: 0;
+  margin: 0;
+}
+
+.card-drawer__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--nexa-navy);
+}
+
+.card-drawer__title-input {
+  field-sizing: content;
+  width: 100%;
+  resize: none;
+  padding: 0.125rem 0.25rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+}
+
+.card-drawer__title-input:hover {
+  background: var(--nexa-surface);
+}
+
+.card-drawer__title-input:focus {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px var(--nexa-teal-100);
+}
+
+.card-drawer__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-drawer__link:hover {
+  text-decoration: underline;
+}
+
+.card-drawer__activity {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-drawer__footer {
+  border-top: 1px solid var(--nexa-border);
+}
+
+@media (max-width: 36em) {
+  .card-drawer__fields {
+    grid-template-columns: 1fr;
+    gap: 0.25rem 0;
+  }
+}
+
+/* Bordered list of rows (time entries, attachments). */
+.card-drawer__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--nexa-border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.card-drawer__list > li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.card-drawer__list > li + li {
+  border-top: 1px solid var(--nexa-border);
+}
+
+/* The remove button shows on hover / focus, like the rest of the drawer. */
+.checklist-item__remove {
+  opacity: 0;
+}
+
+.checklist-item:hover .checklist-item__remove,
+.checklist-item__remove:focus-visible {
+  opacity: 1;
+}
+
+.tests-section__row {
+  flex-wrap: wrap;
+}

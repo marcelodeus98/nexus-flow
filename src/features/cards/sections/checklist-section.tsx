@@ -1,16 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Trash2Icon } from 'lucide-react'
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Checkbox,
+  Group,
+  Progress,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  Tooltip,
+} from '@mantine/core'
+import { IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import { upsertCard } from '@/features/board/api'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Checkbox } from '@/shared/ui/checkbox'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cardKeys, type CardDetail, type ChecklistItem } from '../api'
+import { Section } from './section'
 
 // Every checklist call answers with the whole card (new version, new
 // progress), which goes straight into the caches.
@@ -44,14 +53,18 @@ function useChecklist(projectId: string, card: CardDetail) {
   return { add, update, remove }
 }
 
+// QA items are the card's validation: only who can validate (QA, PO,
+// manager) adds, ticks or removes them. The API enforces the same.
 export function ChecklistSection({
   projectId,
   card,
   editable,
+  validatable,
 }: {
   projectId: string
   card: CardDetail
   editable: boolean
+  validatable: boolean
 }) {
   const { add, update, remove } = useChecklist(projectId, card)
   const [title, setTitle] = useState('')
@@ -59,59 +72,70 @@ export function ChecklistSection({
   const done = card.checklist.filter((item) => item.done).length
 
   return (
-    <section className="space-y-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
-        Checklist
-        {card.checklist.length > 0 && (
-          <span className="font-normal text-muted-foreground">
+    <Section
+      title="Checklist"
+      aside={
+        card.checklist.length > 0 && (
+          <Text size="sm" c="dimmed">
             {done}/{card.checklist.length}
-          </span>
-        )}
-      </h3>
+          </Text>
+        )
+      }
+    >
       {card.checklist.length > 0 && (
-        <div
-          className="h-1.5 overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuenow={done}
-          aria-valuemax={card.checklist.length}
+        <Progress
+          size="sm"
+          value={(done / card.checklist.length) * 100}
           aria-label="Progresso do checklist"
-        >
-          <div
-            className="h-full bg-emerald-600 transition-all"
-            style={{ width: `${(done / card.checklist.length) * 100}%` }}
-          />
-        </div>
+        />
       )}
-      <ul className="space-y-1">
-        {card.checklist.map((item) => (
-          <li key={item.id} className="group flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={item.done}
-              disabled={!editable || update.isPending}
-              aria-label={item.title}
-              onCheckedChange={(checked) => update.mutate({ id: item.id, done: checked === true })}
-            />
-            <span className={`flex-1 ${item.done ? 'text-muted-foreground line-through' : ''}`}>
-              {item.title}
-            </span>
-            {item.kind === 'QA' && <Badge variant="secondary">QA</Badge>}
-            {editable && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                aria-label={`Remover ${item.title}`}
-                onClick={() => remove.mutate(item.id)}
+      <Stack gap={6}>
+        {card.checklist.map((item) => {
+          const itemEditable = item.kind === 'QA' ? validatable : editable
+          return (
+            <Group key={item.id} gap="xs" wrap="nowrap" className="checklist-item">
+              <Checkbox
+                checked={item.done}
+                disabled={!itemEditable || update.isPending}
+                aria-label={item.title}
+                onChange={(e) => update.mutate({ id: item.id, done: e.currentTarget.checked })}
+              />
+              <Text
+                size="sm"
+                style={{ flex: 1 }}
+                c={item.done ? 'dimmed' : undefined}
+                td={item.done ? 'line-through' : undefined}
               >
-                <Trash2Icon />
-              </Button>
-            )}
-          </li>
-        ))}
-      </ul>
+                {item.title}
+              </Text>
+              {item.kind === 'QA' && (
+                <Tooltip label="Só QA, PO ou gestor alteram itens de QA" disabled={validatable}>
+                  <Badge size="sm" variant="light" color="navy">
+                    QA
+                  </Badge>
+                </Tooltip>
+              )}
+              {itemEditable && (
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  className="checklist-item__remove"
+                  aria-label={`Remover ${item.title}`}
+                  onClick={() => remove.mutate(item.id)}
+                >
+                  <IconTrash size={14} />
+                </ActionIcon>
+              )}
+            </Group>
+          )
+        })}
+      </Stack>
       {editable && (
-        <form
-          className="flex gap-2"
+        <Group
+          component="form"
+          gap="xs"
+          wrap="nowrap"
           onSubmit={(event) => {
             event.preventDefault()
             const trimmed = title.trim()
@@ -119,28 +143,34 @@ export function ChecklistSection({
             add.mutate({ title: trimmed, kind }, { onSuccess: () => setTitle('') })
           }}
         >
-          <Input
+          <TextInput
+            size="xs"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Novo item"
             aria-label="Novo item do checklist"
             maxLength={200}
-            className="h-8 flex-1"
+            style={{ flex: 1 }}
           />
-          <Select value={kind} onValueChange={(v) => setKind(v as ChecklistItem['kind'])}>
-            <SelectTrigger size="sm" className="w-24" aria-label="Tipo do item">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="GENERAL">Geral</SelectItem>
-              <SelectItem value="QA">QA</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="submit" size="sm" variant="outline" disabled={add.isPending}>
+          {validatable && (
+            <Select
+              size="xs"
+              w={96}
+              aria-label="Tipo do item"
+              value={kind}
+              onChange={(v) => v && setKind(v as ChecklistItem['kind'])}
+              allowDeselect={false}
+              data={[
+                { value: 'GENERAL', label: 'Geral' },
+                { value: 'QA', label: 'QA' },
+              ]}
+            />
+          )}
+          <Button type="submit" size="xs" variant="default" loading={add.isPending}>
             Adicionar
           </Button>
-        </form>
+        </Group>
       )}
-    </section>
+    </Section>
   )
 }

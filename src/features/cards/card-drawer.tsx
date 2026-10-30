@@ -1,44 +1,42 @@
-import { BellIcon, BellOffIcon, ChevronDownIcon, Trash2Icon, XIcon } from 'lucide-react'
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Drawer,
+  Group,
+  Menu,
+  MultiSelect,
+  NumberInput,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core'
+import { IconBell, IconBellOff, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { toast } from 'sonner'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useDepartments } from '@/features/admin/api'
 import {
+  boardKeys,
   priorityLabels,
   useBoard,
+  useBoards,
   useMoveCard,
   useTags,
+  type Board,
   type CardDepartmentRole,
   type CardPriority,
 } from '@/features/board/api'
-import { useCan, useProjectMe, useProjectMembers } from '@/features/projects/api'
 import { moveErrorMessage } from '@/features/board/move-errors'
+import { useCan, useProjectMe, useProjectMembers } from '@/features/projects/api'
 import { useCurrentProject } from '@/features/projects/project-context'
 import { apiErrorMessage } from '@/shared/api/errors'
+import { ApiError, http } from '@/shared/api/http'
 import { useSessionState } from '@/shared/auth/session-store'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
-import { Button } from '@/shared/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
-import { ApiError } from '@/shared/api/http'
+import { confirmDanger } from '@/shared/notify/confirm'
+import { toast } from '@/shared/notify/toast'
 import {
   useCardActivity,
   useCardByNumber,
@@ -50,11 +48,16 @@ import {
   type CardPatch,
 } from './api'
 import { DescriptionEditor } from './description-editor'
+import { Section } from './sections/section'
 import { AttachmentsSection } from './sections/attachments-section'
 import { ChecklistSection } from './sections/checklist-section'
 import { CommentsSection } from './sections/comments-section'
+import { BugSection, BugsFoundSection } from './sections/bug-sections'
+import { ReviewSection } from './sections/review-section'
+import { TestsSection } from './sections/tests-section'
 import { SprintField } from './sections/sprint-field'
 import { TimeSection } from './sections/time-section'
+import './card-drawer.css'
 
 const departmentRoleLabels: Record<CardDepartmentRole, string> = {
   ORIGIN: 'Origem',
@@ -62,47 +65,62 @@ const departmentRoleLabels: Record<CardDepartmentRole, string> = {
   INVOLVED: 'Envolvido',
 }
 
+const departmentRoleOptions = Object.entries(departmentRoleLabels).map(([value, label]) => ({
+  value,
+  label,
+}))
+const priorityOptions = Object.entries(priorityLabels).map(([value, label]) => ({ value, label }))
+
 // /p/:projectKey/c/:cardNumber — the card in a side panel over the board, so
 // the link can be shared and the board stays in place behind it.
 export function CardDrawer() {
   const project = useCurrentProject()
-  const { cardNumber } = useParams()
+  const { cardNumber, boardId } = useParams()
   const navigate = useNavigate()
   const card = useCardByNumber(project.id, Number(cardNumber))
-  const close = () => void navigate(`/p/${project.key}`)
+  // Back to the board it was opened over.
+  const close = () =>
+    void navigate(boardId ? `/p/${project.key}/b/${boardId}` : `/p/${project.key}`)
 
   return (
-    <Sheet open onOpenChange={(open) => !open && close()}>
-      <SheetContent
-        className="w-full gap-0 overflow-y-auto sm:max-w-xl"
-        showCloseButton={false}
-        aria-describedby={undefined}
-      >
-        {card.isPending && (
-          <SheetHeader>
-            <SheetTitle>Carregando…</SheetTitle>
-          </SheetHeader>
-        )}
-        {card.isError && (
-          <SheetHeader>
-            <SheetTitle>
-              {card.error instanceof ApiError && card.error.status === 404
-                ? 'Card não encontrado'
-                : 'Não foi possível abrir o card'}
-            </SheetTitle>
-            <SheetDescription>{apiErrorMessage(card.error)}</SheetDescription>
-          </SheetHeader>
-        )}
-        {card.data && <CardDetailView card={card.data} onClose={close} />}
-      </SheetContent>
-    </Sheet>
+    <Drawer
+      opened
+      onClose={close}
+      position="right"
+      size="xl"
+      withCloseButton={false}
+      padding={0}
+      title={null}
+      aria-label="Card"
+    >
+      {card.isPending && (
+        <Text p="xl" c="dimmed">
+          Carregando…
+        </Text>
+      )}
+      {card.isError && (
+        <Stack p="xl" gap="xs">
+          <Title order={4}>
+            {card.error instanceof ApiError && card.error.status === 404
+              ? 'Card não encontrado'
+              : 'Não foi possível abrir o card'}
+          </Title>
+          <Text size="sm" c="dimmed">
+            {apiErrorMessage(card.error)}
+          </Text>
+        </Stack>
+      )}
+      {card.data && <CardDetailView card={card.data} onClose={close} />}
+    </Drawer>
   )
 }
 
 function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => void }) {
   const project = useCurrentProject()
   const can = useCan(project.key)
-  const board = useBoard(project.id)
+  const queryClient = useQueryClient()
+  const board = useBoard(project.id, card.boardId)
+  const boards = useBoards(project.id)
   const tags = useTags(project.id)
   const members = useProjectMembers(project.id)
   const departments = useDepartments()
@@ -111,7 +129,23 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
   const update = useUpdateCard(project.id, card)
   const remove = useDeleteCard(project.id)
   const watch = useSetWatching(project.id, card)
-  const moveCard = useMoveCard(project.id, (error) => toast.error(moveErrorMessage(error)))
+  const moveCard = useMoveCard(project.id, boardKeys.board(project.id, card.boardId), (error) =>
+    toast.error(moveErrorMessage(error)),
+  )
+
+  // To another board: the end of its first column (its rules still apply).
+  async function moveToBoard(boardId: string) {
+    try {
+      const target = await queryClient.fetchQuery({
+        queryKey: boardKeys.board(project.id, boardId),
+        queryFn: () => http<Board>(`/boards/${boardId}`),
+      })
+      const first = target.columns[0]
+      if (first) moveCard({ cardId: card.id, columnId: first.id })
+    } catch (error) {
+      toast.error(apiErrorMessage(error))
+    }
+  }
 
   const readOnly = project.status === 'ARCHIVED'
   const editable = !readOnly && can('card:edit')
@@ -136,75 +170,88 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
   const memberList = members.data?.members ?? []
   const columns = board.data?.columns ?? []
 
+  function confirmDelete() {
+    confirmDanger({
+      title: `Excluir ${project.key}-${card.number}?`,
+      message: 'O card sai do board. O número e o histórico ficam guardados.',
+      onConfirm: () =>
+        remove.mutate(card.id, {
+          onSuccess: () => {
+            toast.success('Card excluído.')
+            onClose()
+          },
+          onError: (error) => toast.error(apiErrorMessage(error)),
+        }),
+    })
+  }
+
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="font-mono text-xs text-muted-foreground">
+    <Stack gap="xl" p="xl">
+      <Group align="flex-start" gap="xs" wrap="nowrap">
+        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+          <Text size="xs" c="dimmed" ff="monospace">
             {project.key}-{card.number}
             {card.parent && (
               <>
                 {' · filho de '}
-                <Link to={`/p/${project.key}/c/${card.parent.number}`} className="underline">
+                <Link to={`/p/${project.key}/c/${card.parent.number}`} className="text-link">
                   {project.key}-{card.parent.number}
                 </Link>
               </>
             )}
-          </p>
-          <SheetTitle asChild>
-            <TitleField
-              key={card.version}
-              value={card.title}
-              editable={editable}
-              onSave={(title) => save({ title })}
-            />
-          </SheetTitle>
-        </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Fechar" onClick={onClose}>
-          <XIcon />
-        </Button>
-      </div>
+          </Text>
+          <TitleField
+            key={card.version}
+            value={card.title}
+            editable={editable}
+            onSave={(title) => save({ title })}
+          />
+        </Stack>
+        <ActionIcon variant="subtle" color="gray" aria-label="Fechar" onClick={onClose}>
+          <IconX size={18} />
+        </ActionIcon>
+      </Group>
 
-      <dl className="grid grid-cols-[8rem_1fr] items-center gap-x-3 gap-y-3 text-sm">
+      <dl className="card-drawer__fields">
+        {(boards.data?.length ?? 0) > 1 && (
+          <Row label="Board">
+            <Select
+              size="xs"
+              aria-label="Board"
+              value={card.boardId}
+              disabled={!movable}
+              onChange={(boardId) => boardId && void moveToBoard(boardId)}
+              allowDeselect={false}
+              data={(boards.data ?? []).map((b) => ({ value: b.id, label: b.name }))}
+            />
+          </Row>
+        )}
         <Row label="Coluna">
           <Select
+            size="xs"
+            aria-label="Coluna"
             value={card.columnId}
             disabled={!movable}
-            onValueChange={(columnId) => moveCard({ cardId: card.id, columnId })}
-          >
-            <SelectTrigger size="sm" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {columns.map((column) => (
-                <SelectItem key={column.id} value={column.id}>
-                  {column.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(columnId) => columnId && moveCard({ cardId: card.id, columnId })}
+            allowDeselect={false}
+            data={columns.map((column) => ({ value: column.id, label: column.name }))}
+          />
         </Row>
         <Row label="Prioridade">
           <Select
+            size="xs"
+            aria-label="Prioridade"
             value={card.priority}
             disabled={!editable}
-            onValueChange={(priority) => save({ priority: priority as CardPriority })}
-          >
-            <SelectTrigger size="sm" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(priorityLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(priority) => priority && save({ priority: priority as CardPriority })}
+            allowDeselect={false}
+            data={priorityOptions}
+          />
         </Row>
         <Row label="Story points">
           <NumberField
             key={`sp-${card.version}`}
+            label="Story points"
             value={card.storyPoints}
             step={0.5}
             editable={editable}
@@ -214,6 +261,7 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
         <Row label="Estimativa (h)">
           <NumberField
             key={`h-${card.version}`}
+            label="Estimativa em horas"
             value={card.estimateMinutes === null ? null : card.estimateMinutes / 60}
             step={0.25}
             editable={editable}
@@ -223,10 +271,11 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
           />
         </Row>
         <Row label="Prazo">
-          <Input
+          <TextInput
             key={`due-${card.version}`}
+            size="xs"
             type="date"
-            className="h-7"
+            aria-label="Prazo"
             disabled={!editable}
             defaultValue={card.dueDate?.slice(0, 10) ?? ''}
             onBlur={(e) => {
@@ -248,11 +297,7 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
           <MultiPicker
             label="Tags"
             disabled={!editable}
-            options={(tags.data ?? []).map((tag) => ({
-              id: tag.id,
-              label: tag.name,
-              color: tag.color,
-            }))}
+            options={(tags.data ?? []).map((tag) => ({ id: tag.id, label: tag.name }))}
             selected={card.tagIds}
             onChange={(tagIds) => save({ tagIds })}
           />
@@ -272,8 +317,7 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
         )}
       </dl>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Descrição</h3>
+      <Section title="Descrição">
         <DescriptionEditor
           key={card.version}
           value={card.description}
@@ -281,27 +325,47 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
           saving={update.isPending}
           onSave={(description) => save({ description })}
         />
-      </section>
+      </Section>
 
       {card.children.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Subtarefas</h3>
-          <ul className="space-y-1 text-sm">
+        <Section title="Subtarefas">
+          <Stack gap={4}>
             {card.children.map((child) => (
-              <li key={child.id}>
-                <Link to={`/p/${project.key}/c/${child.number}`} className="hover:underline">
-                  <span className="font-mono text-xs text-muted-foreground">
+              <Text key={child.id} size="sm">
+                <Link to={`/p/${project.key}/c/${child.number}`} className="card-drawer__link">
+                  <Text span size="xs" c="dimmed" ff="monospace">
                     {project.key}-{child.number}
-                  </span>{' '}
+                  </Text>{' '}
                   {child.title}
                 </Link>
-              </li>
+              </Text>
             ))}
-          </ul>
-        </section>
+          </Stack>
+        </Section>
       )}
 
-      <ChecklistSection projectId={project.id} card={card} editable={editable} />
+      <BugSection projectId={project.id} projectKey={project.key} card={card} editable={editable} />
+
+      <ReviewSection
+        projectId={project.id}
+        card={card}
+        canValidate={!readOnly && can('card:validate')}
+      />
+
+      <TestsSection projectId={project.id} card={card} canRun={!readOnly && can('card:validate')} />
+
+      <BugsFoundSection
+        projectKey={project.key}
+        card={card}
+        canReport={!readOnly && can('card:create')}
+      />
+
+      <ChecklistSection
+        projectId={project.id}
+        card={card}
+        editable={editable}
+        validatable={editable && can('card:validate')}
+      />
 
       <TimeSection card={card} canLog={!readOnly && can('time:log')} userId={userId} />
 
@@ -322,66 +386,42 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
 
       <Activity cardId={card.id} />
 
-      <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+      <Group gap="sm" pt="md" className="card-drawer__footer">
         <Button
-          variant="outline"
-          size="sm"
-          disabled={watch.isPending}
+          variant="default"
+          size="xs"
+          leftSection={watching ? <IconBellOff size={14} /> : <IconBell size={14} />}
+          loading={watch.isPending}
           onClick={() => watch.mutate(!watching)}
         >
-          {watching ? <BellOffIcon /> : <BellIcon />}
           {watching ? 'Deixar de seguir' : 'Seguir'}
         </Button>
-        <span className="text-xs text-muted-foreground">
+        <Text size="xs" c="dimmed">
           Criado {card.createdBy && `por ${card.createdBy.name} `}em{' '}
           {new Date(card.createdAt).toLocaleDateString('pt-BR')}
-        </span>
+        </Text>
         {editable && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="ml-auto">
-                <Trash2Icon /> Excluir
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Excluir {project.key}-{card.number}?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  O card sai do board. O número e o histórico ficam guardados.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={() =>
-                    remove.mutate(card.id, {
-                      onSuccess: () => {
-                        toast.success('Card excluído.')
-                        onClose()
-                      },
-                      onError: (error) => toast.error(apiErrorMessage(error)),
-                    })
-                  }
-                >
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button
+            ml="auto"
+            size="xs"
+            variant="light"
+            color="red"
+            leftSection={<IconTrash size={14} />}
+            onClick={confirmDelete}
+          >
+            Excluir
+          </Button>
         )}
-      </div>
-    </div>
+      </Group>
+    </Stack>
   )
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0">{children}</dd>
+      <dt className="card-drawer__label">{label}</dt>
+      <dd className="card-drawer__value">{children}</dd>
     </>
   )
 }
@@ -404,13 +444,13 @@ function TitleField({
   }
   if (!editable) {
     return (
-      <h2 className="text-lg leading-snug font-semibold break-words" {...props}>
+      <h2 className="card-drawer__title" {...props}>
         {value}
       </h2>
     )
   }
   return (
-    <h2 {...props}>
+    <h2 className="card-drawer__title" {...props}>
       <textarea
         aria-label="Título"
         value={draft}
@@ -425,40 +465,45 @@ function TitleField({
           }
           if (e.key === 'Escape') setDraft(value)
         }}
-        className="field-sizing-content w-full resize-none rounded-md px-1 py-0.5 text-lg leading-snug font-semibold outline-none hover:bg-muted focus:bg-background focus:ring-2 focus:ring-ring/50"
+        className="card-drawer__title-input"
       />
     </h2>
   )
 }
 
 function NumberField({
+  label,
   value,
   step,
   editable,
   onSave,
 }: {
+  label: string
   value: number | null
   step: number
   editable: boolean
   onSave: (value: number | null) => void
 }) {
   return (
-    <Input
-      type="number"
+    <NumberInput
+      size="xs"
+      aria-label={label}
       min={0}
       step={step}
-      className="h-7"
+      decimalSeparator=","
       disabled={!editable}
       defaultValue={value ?? ''}
       placeholder="—"
       onBlur={(e) => {
-        const next = e.target.value === '' ? null : Number(e.target.value)
+        const text = e.target.value.replace(',', '.')
+        const next = text === '' ? null : Number(text)
         if (next !== value && (next === null || Number.isFinite(next))) onSave(next)
       }}
     />
   )
 }
 
+// Changes are collected while the list is open and saved once it closes.
 function MultiPicker({
   label,
   options,
@@ -467,70 +512,33 @@ function MultiPicker({
   onChange,
 }: {
   label: string
-  options: { id: string; label: string; color?: string }[]
+  options: { id: string; label: string }[]
   selected: string[]
   disabled: boolean
   onChange: (ids: string[]) => void
 }) {
-  // Changes are collected while the menu is open and saved once on close.
   const [draft, setDraft] = useState<string[] | null>(null)
   const current = draft ?? selected
-  const names = options.filter((o) => current.includes(o.id))
+
+  function commit(next: string[]) {
+    if ([...next].sort().join() !== [...selected].sort().join()) onChange(next)
+    setDraft(null)
+  }
 
   return (
-    <DropdownMenu
-      onOpenChange={(open) => {
-        if (open) return setDraft(selected)
-        if (draft && [...draft].sort().join() !== [...selected].sort().join()) onChange(draft)
-        setDraft(null)
-      }}
-    >
-      <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button variant="outline" size="sm" className="h-auto min-h-7 w-full justify-between py-1">
-          <span className="flex flex-wrap gap-1 text-left">
-            {names.length === 0 && <span className="text-muted-foreground">Nenhum</span>}
-            {names.map((option) => (
-              <span
-                key={option.id}
-                className="rounded bg-muted px-1.5 text-xs"
-                style={
-                  option.color
-                    ? { backgroundColor: `${option.color}22`, color: option.color }
-                    : undefined
-                }
-              >
-                {option.label}
-              </span>
-            ))}
-          </span>
-          <ChevronDownIcon className="text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
-        {options.length === 0 && (
-          <DropdownMenuItem disabled>Nada para escolher em {label.toLowerCase()}</DropdownMenuItem>
-        )}
-        {options.map((option) => (
-          <DropdownMenuCheckboxItem
-            key={option.id}
-            checked={current.includes(option.id)}
-            onSelect={(e) => e.preventDefault()}
-            onCheckedChange={(checked) =>
-              setDraft(checked ? [...current, option.id] : current.filter((id) => id !== option.id))
-            }
-          >
-            {option.color && (
-              <span
-                className="size-2.5 rounded-full"
-                style={{ backgroundColor: option.color }}
-                aria-hidden
-              />
-            )}
-            {option.label}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <MultiSelect
+      size="xs"
+      aria-label={label}
+      placeholder={current.length ? undefined : 'Nenhum'}
+      disabled={disabled}
+      searchable
+      nothingFoundMessage={`Nada para escolher em ${label.toLowerCase()}`}
+      value={current}
+      data={options.map((option) => ({ value: option.id, label: option.label }))}
+      onChange={(ids) => (draft === null ? commit(ids) : setDraft(ids))}
+      onDropdownOpen={() => setDraft(selected)}
+      onDropdownClose={() => draft !== null && commit(draft)}
+    />
   )
 }
 
@@ -549,23 +557,29 @@ function DepartmentsField({
   const available = options.filter((d) => !value.some((v) => v.departmentId === d.id))
 
   return (
-    <div className="space-y-1.5">
+    <Stack gap={6}>
       {value.map((entry) => {
         const department = byId.get(entry.departmentId)
         return (
-          <div key={entry.departmentId} className="flex items-center gap-2">
-            <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 truncate">
-              <span
-                className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: department?.color }}
-                aria-hidden
+          <Group key={entry.departmentId} gap="xs" wrap="nowrap">
+            <Group gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+              <Box
+                w={10}
+                h={10}
+                style={{ borderRadius: '50%', flexShrink: 0, background: department?.color }}
               />
-              {department?.name ?? '—'}
-            </span>
+              <Text size="sm" truncate>
+                {department?.name ?? '—'}
+              </Text>
+            </Group>
             <Select
+              size="xs"
+              w={120}
+              aria-label={`Papel de ${department?.name}`}
               value={entry.role}
               disabled={!editable}
-              onValueChange={(role) =>
+              onChange={(role) =>
+                role &&
                 onChange(
                   value.map((v) =>
                     v.departmentId === entry.departmentId
@@ -574,43 +588,41 @@ function DepartmentsField({
                   ),
                 )
               }
-            >
-              <SelectTrigger size="sm" className="w-28" aria-label={`Papel de ${department?.name}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(departmentRoleLabels).map(([role, label]) => (
-                  <SelectItem key={role} value={role}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowDeselect={false}
+              data={departmentRoleOptions}
+            />
             {editable && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
                 aria-label={`Remover ${department?.name}`}
                 onClick={() => onChange(value.filter((v) => v.departmentId !== entry.departmentId))}
               >
-                <XIcon />
-              </Button>
+                <IconX size={14} />
+              </ActionIcon>
             )}
-          </div>
+          </Group>
         )
       })}
       {editable && available.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="xs" className="text-muted-foreground">
-              + Adicionar departamento
+        <Menu position="bottom-start">
+          <Menu.Target>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="xs"
+              w="fit-content"
+              leftSection={<IconPlus size={14} />}
+            >
+              Adicionar departamento
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          </Menu.Target>
+          <Menu.Dropdown>
             {available.map((department) => (
-              <DropdownMenuItem
+              <Menu.Item
                 key={department.id}
-                onSelect={() =>
+                onClick={() =>
                   onChange([
                     ...value,
                     {
@@ -621,13 +633,17 @@ function DepartmentsField({
                 }
               >
                 {department.name}
-              </DropdownMenuItem>
+              </Menu.Item>
             ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Menu.Dropdown>
+        </Menu>
       )}
-      {!editable && value.length === 0 && <span className="text-muted-foreground">Nenhum</span>}
-    </div>
+      {!editable && value.length === 0 && (
+        <Text size="sm" c="dimmed">
+          Nenhum
+        </Text>
+      )}
+    </Stack>
   )
 }
 
@@ -667,26 +683,27 @@ function describe(entry: ActivityEntry): string {
 function Activity({ cardId }: { cardId: string }) {
   const activity = useCardActivity(cardId)
   return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold">Histórico</h3>
-      <ol className="space-y-1.5 text-sm">
+    <Section title="Histórico">
+      <Stack gap={6} component="ol" className="card-drawer__activity">
         {activity.data?.map((entry) => (
-          <li key={entry.id} className="flex gap-2">
-            <span className="text-muted-foreground tabular-nums">
+          <Group key={entry.id} component="li" gap="xs" wrap="nowrap" align="flex-start">
+            <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
               {new Date(entry.createdAt).toLocaleString('pt-BR', {
                 day: '2-digit',
                 month: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
               })}
-            </span>
-            <span>
-              <span className="font-medium">{entry.actor?.name ?? 'Sistema'}</span>{' '}
+            </Text>
+            <Text size="sm">
+              <Text span fw={600}>
+                {entry.actor?.name ?? 'Sistema'}
+              </Text>{' '}
               {describe(entry)}
-            </span>
-          </li>
+            </Text>
+          </Group>
         ))}
-      </ol>
-    </section>
+      </Stack>
+    </Section>
   )
 }

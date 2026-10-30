@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from './api'
 import { AuthCard, Field, FormMessage, SubmitButton } from './auth-card'
 
@@ -19,7 +19,7 @@ export function ResetPasswordPage() {
       {(!token || mutation.isError) && (
         <FormMessage tone="error">
           Link inválido ou expirado.{' '}
-          <Link to="/forgot-password" className="underline">
+          <Link to="/forgot-password" className="text-link">
             Peça um novo
           </Link>
           .
@@ -27,7 +27,7 @@ export function ResetPasswordPage() {
       )}
       {mismatch && <FormMessage tone="error">As senhas não conferem.</FormMessage>}
       <form
-        className="space-y-4"
+        className="login-card__form"
         onSubmit={(event) => {
           event.preventDefault()
           const form = new FormData(event.currentTarget)

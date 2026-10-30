@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { env } from '@/shared/config/env'
+import { apiClient } from '@/shared/api/client'
 
 export type SessionUser = {
   id: string
@@ -46,11 +46,9 @@ export function useSessionState(): SessionState {
 // Single flight: concurrent 401s and StrictMode double effects share one call,
 // so the API never sees the same refresh token twice from this tab.
 export function refreshSession(): Promise<Session | null> {
-  pendingRefresh ??= fetch(`${env.VITE_API_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-    .then(async (response) => (response.ok ? ((await response.json()) as Session) : null))
+  pendingRefresh ??= apiClient
+    .post<Session>('/auth/refresh')
+    .then((response) => (response.status === 200 ? response.data : null))
     .catch(() => null)
     .then((session) => {
       setSession(session)

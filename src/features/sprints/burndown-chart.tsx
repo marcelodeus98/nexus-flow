@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import type { SprintTotals } from './api'
 import { formatDay } from './api'
+import './burndown-chart.css'
 
 export type BurndownUnit = 'points' | 'hours'
 
@@ -52,9 +53,7 @@ export function BurndownChart({
   }, [])
 
   if (!sprintDays.some((day) => day.value)) {
-    return (
-      <p className="text-sm text-muted-foreground">O burndown aparece quando a sprint começa.</p>
-    )
+    return <p className="burndown__empty">O burndown aparece quando a sprint começa.</p>
   }
 
   // Point 0 is the start (committed scope); point i+1 is the end of day i.
@@ -98,18 +97,18 @@ export function BurndownChart({
   const hovered = active !== null ? days[active] : null
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-0.5 w-4 rounded bg-[var(--series-1)]" aria-hidden /> Restante
+    <div className="burndown">
+      <div className="burndown__legend">
+        <span>
+          <span className="burndown__swatch burndown__swatch--actual" aria-hidden /> Restante
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-px w-4 bg-[var(--chart-reference)]" aria-hidden /> Ideal
+        <span>
+          <span className="burndown__swatch burndown__swatch--ideal" aria-hidden /> Ideal
         </span>
       </div>
       <div
         ref={container}
-        className="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="burndown__plot"
         tabIndex={0}
         role="img"
         aria-label={`Burndown em ${unit === 'points' ? 'pontos' : 'horas'}: começou com ${fmt(start, unit)}${
@@ -118,7 +117,7 @@ export function BurndownChart({
         onKeyDown={onKeyDown}
         onBlur={() => setActive(null)}
       >
-        <svg width={width} height={HEIGHT} className="block overflow-visible">
+        <svg width={width} height={HEIGHT} className="burndown__svg">
           {ticks.map((tick) => (
             <g key={tick}>
               <line
@@ -134,7 +133,7 @@ export function BurndownChart({
                 y={y(tick)}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-muted-foreground text-[11px] tabular-nums"
+                className="burndown__axis"
               >
                 {tick}
               </text>
@@ -147,7 +146,7 @@ export function BurndownChart({
                 x={x(i)}
                 y={HEIGHT - 8}
                 textAnchor="middle"
-                className="fill-muted-foreground text-[11px] tabular-nums"
+                className="burndown__axis"
               >
                 {labels[i]}
               </text>
@@ -178,15 +177,10 @@ export function BurndownChart({
                 cy={y(lastValue)}
                 r={4}
                 fill="var(--series-1)"
-                stroke="var(--background)"
+                stroke="#ffffff"
                 strokeWidth={2}
               />
-              <text
-                x={x(lastIndex) + 8}
-                y={y(lastValue)}
-                dy="0.32em"
-                className="fill-foreground text-xs font-medium"
-              >
+              <text x={x(lastIndex) + 8} y={y(lastValue)} dy="0.32em" className="burndown__value">
                 {fmt(lastValue, unit)}
               </text>
             </>
@@ -198,7 +192,7 @@ export function BurndownChart({
               x2={x(active)}
               y1={PAD.top}
               y2={PAD.top + plotH}
-              stroke="var(--muted-foreground)"
+              stroke="var(--nexa-slate)"
               strokeWidth={1}
             />
           )}
@@ -216,44 +210,42 @@ export function BurndownChart({
 
         {hovered && active !== null && (
           <div
-            className="pointer-events-none absolute top-2 rounded-md border bg-popover px-3 py-2 text-xs shadow-md"
+            className="burndown__tooltip"
             style={
               x(active) > width / 2 ? { right: width - x(active) + 8 } : { left: x(active) + 8 }
             }
           >
-            <p className="mb-1 font-medium">{labels[active]}</p>
-            <p className="flex items-center gap-2">
-              <span className="h-0.5 w-3 rounded bg-[var(--series-1)]" aria-hidden />
-              <span className="font-semibold tabular-nums">
-                {actual[active] === null ? '—' : fmt(actual[active]!, unit)}
-              </span>
-              <span className="text-muted-foreground">restante</span>
+            <p className="burndown__tooltip-title">{labels[active]}</p>
+            <p className="burndown__tooltip-row">
+              <span className="burndown__swatch burndown__swatch--actual" aria-hidden />
+              <strong>{actual[active] === null ? '—' : fmt(actual[active]!, unit)}</strong>
+              <span>restante</span>
             </p>
-            <p className="flex items-center gap-2">
-              <span className="h-px w-3 bg-[var(--chart-reference)]" aria-hidden />
-              <span className="font-semibold tabular-nums">{fmt(ideal[active], unit)}</span>
-              <span className="text-muted-foreground">ideal</span>
+            <p className="burndown__tooltip-row">
+              <span className="burndown__swatch burndown__swatch--ideal" aria-hidden />
+              <strong>{fmt(ideal[active], unit)}</strong>
+              <span>ideal</span>
             </p>
           </div>
         )}
       </div>
 
-      <details className="text-sm">
-        <summary className="cursor-pointer text-muted-foreground">Ver como tabela</summary>
-        <table className="mt-2 w-full max-w-md text-left tabular-nums">
-          <thead className="text-xs text-muted-foreground">
+      <details className="burndown__table">
+        <summary>Ver como tabela</summary>
+        <table>
+          <thead>
             <tr>
-              <th className="py-1 font-medium">Dia</th>
-              <th className="py-1 font-medium">Restante</th>
-              <th className="py-1 font-medium">Ideal</th>
+              <th>Dia</th>
+              <th>Restante</th>
+              <th>Ideal</th>
             </tr>
           </thead>
           <tbody>
             {days.map((_day, i) => (
-              <tr key={labels[i]} className="border-t">
-                <td className="py-1">{labels[i]}</td>
-                <td className="py-1">{actual[i] === null ? '—' : fmt(actual[i]!, unit)}</td>
-                <td className="py-1">{fmt(ideal[i], unit)}</td>
+              <tr key={labels[i]}>
+                <td>{labels[i]}</td>
+                <td>{actual[i] === null ? '—' : fmt(actual[i]!, unit)}</td>
+                <td>{fmt(ideal[i], unit)}</td>
               </tr>
             ))}
           </tbody>

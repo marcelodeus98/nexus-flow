@@ -1,18 +1,20 @@
+import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { afterEach, describe, expect, it } from 'vitest'
 import { getSessionState, setSession } from '@/shared/auth/session-store'
+import { theme } from '@/styles/theme'
+import { mockApi as mockClient } from '@/test/api'
 import { LoginPage } from './login-page'
 
-const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status })
+const json = (status: number, body: unknown): [number, unknown] => [status, body]
 
-function mockApi(loginResponse: Response, providers = { password: true, google: false }) {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-    const url = String(input)
-    if (url.endsWith('/auth/providers')) return json(200, providers)
-    if (url.endsWith('/auth/login')) return loginResponse
+function mockApi(loginResponse: [number, unknown], providers = { password: true, google: false }) {
+  return mockClient(({ url }) => {
+    if (url?.endsWith('/auth/providers')) return [200, providers]
+    if (url?.endsWith('/auth/login')) return loginResponse
     throw new Error(`Unexpected request to ${url}`)
   })
 }
@@ -28,16 +30,18 @@ function renderLogin(initialEntry = '/login') {
   )
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
-    <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <MantineProvider theme={theme}>
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </MantineProvider>,
   )
 }
 
 async function submit(email: string, password: string) {
   const user = userEvent.setup()
-  await user.type(screen.getByLabelText('E-mail'), email)
-  await user.type(screen.getByLabelText('Senha'), password)
+  await user.type(screen.getByLabelText(/^E-mail/), email)
+  await user.type(screen.getByLabelText(/^Senha/, { selector: 'input' }), password)
   await user.click(screen.getByRole('button', { name: 'Entrar' }))
 }
 

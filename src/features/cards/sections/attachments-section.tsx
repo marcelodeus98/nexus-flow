@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { DownloadIcon, PaperclipIcon, Trash2Icon } from 'lucide-react'
+import { ActionIcon, Button, Text } from '@mantine/core'
+import { IconDownload, IconPaperclip, IconTrash } from '@tabler/icons-react'
+import axios from 'axios'
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/shared/notify/toast'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
 import { cardKeys } from '../api'
+import { Section } from './section'
 
 type Attachment = {
   id: string
@@ -34,12 +36,8 @@ async function upload(cardId: string, file: File) {
     method: 'POST',
     body: JSON.stringify({ fileName: file.name, mimeType, size: file.size }),
   })
-  const put = await fetch(presigned.uploadUrl, {
-    method: 'PUT',
-    headers: presigned.headers,
-    body: file,
-  })
-  if (!put.ok) throw new Error(`Upload failed with ${put.status}`)
+  // Straight to storage: not the API client (no token, no cookies).
+  await axios.put(presigned.uploadUrl, file, { headers: presigned.headers })
   return http<Attachment>(`/cards/${cardId}/attachments`, {
     method: 'POST',
     body: JSON.stringify({ storageKey: presigned.storageKey, fileName: file.name, mimeType }),
@@ -109,19 +107,21 @@ export function AttachmentsSection({
   if (!enabled && list.length === 0) return null
 
   return (
-    <section className="space-y-2">
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold">Anexos</h3>
-        {canEdit && enabled && (
+    <Section
+      title="Anexos"
+      aside={
+        canEdit &&
+        enabled && (
           <>
             <Button
+              ml="auto"
               size="xs"
-              variant="ghost"
-              className="ml-auto"
-              disabled={uploading > 0}
+              variant="subtle"
+              leftSection={<IconPaperclip size={14} />}
+              loading={uploading > 0}
               onClick={() => input.current?.click()}
             >
-              <PaperclipIcon /> {uploading > 0 ? 'Enviando…' : 'Anexar arquivo'}
+              Anexar arquivo
             </Button>
             <input
               ref={input}
@@ -134,40 +134,45 @@ export function AttachmentsSection({
               }}
             />
           </>
-        )}
-      </div>
+        )
+      }
+    >
       {list.length > 0 && (
-        <ul className="divide-y rounded-lg border text-sm">
+        <ul className="card-drawer__list">
           {list.map((attachment) => (
-            <li key={attachment.id} className="flex items-center gap-2 px-3 py-1.5">
-              <span className="min-w-0 flex-1 truncate" title={attachment.fileName}>
+            <li key={attachment.id}>
+              <Text span size="sm" truncate title={attachment.fileName} style={{ flex: 1 }}>
                 {attachment.fileName}
-              </span>
-              <span className="text-xs text-muted-foreground">{formatSize(attachment.size)}</span>
+              </Text>
+              <Text span size="xs" c="dimmed">
+                {formatSize(attachment.size)}
+              </Text>
               {enabled && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
                   aria-label={`Baixar ${attachment.fileName}`}
                   onClick={() => void download(attachment.id)}
                 >
-                  <DownloadIcon />
-                </Button>
+                  <IconDownload size={14} />
+                </ActionIcon>
               )}
               {canEdit && (attachment.uploader?.id === userId || canModerate) && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
                   aria-label={`Excluir ${attachment.fileName}`}
                   onClick={() => remove.mutate(attachment.id)}
                 >
-                  <Trash2Icon />
-                </Button>
+                  <IconTrash size={14} />
+                </ActionIcon>
               )}
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Section>
   )
 }

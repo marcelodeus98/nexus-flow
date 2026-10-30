@@ -1,0 +1,33 @@
+.backlog__panel-header {
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.backlog__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backlog__rows > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.backlog__rows > li + li {
+  border-top: 1px solid var(--nexa-border);
+}
+
+.backlog__card-link {
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.backlog__card-link:hover {
+  text-decoration: underline;
+}

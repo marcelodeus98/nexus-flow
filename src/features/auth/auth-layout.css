@@ -1,0 +1,146 @@
+/*
+ * Telas públicas de autenticação (login, esqueci/redefinir senha), com a
+ * mesma moldura do Nexa Assets. Teal do layout de login (#00B3C0) vem do mockup.
+ */
+.login-page {
+  --auth-teal: #00b3c0;
+  --auth-teal-hover: #009ca8;
+
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 55%) minmax(0, 45%);
+  background: #ffffff;
+}
+
+/* Raios decorativos: eclipse no topo, centrado na divisa entre o formulário
+   e o painel da foto (por cima dela), e um leque no canto inferior esquerdo. */
+.login-page__eclipse {
+  position: absolute;
+  top: 0;
+  left: 55%;
+  z-index: 2;
+  width: 18rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.login-page__rays-bottom {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 13rem;
+  pointer-events: none;
+}
+
+.login-page__form-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem 2.25rem;
+}
+
+.login-page__brand {
+  position: relative;
+  z-index: 1;
+  color: var(--nexa-navy);
+}
+
+.login-page__form-body {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  padding: 2rem 0 4rem 18%;
+}
+
+.login-page__visual {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent 0 28%, var(--auth-teal) 28% 100%);
+}
+
+.login-page__hero {
+  position: absolute;
+  bottom: 0;
+  left: 28%;
+  height: min(96%, 60rem);
+  transform: translateX(-50%) scaleX(-1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.login-card {
+  width: min(100%, 27rem);
+}
+
+.login-card__header h1 {
+  margin: 0;
+  color: var(--nexa-navy);
+  font-size: 2rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.login-card__header p {
+  margin: 1rem 0 0;
+  color: var(--nexa-slate);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Formulário com componentes Mantine (TextInput, PasswordInput, Button). */
+.login-card__fields {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.9rem;
+}
+
+.login-card__link {
+  color: var(--nexa-teal-700);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.login-card__link:hover {
+  color: var(--nexa-teal-800);
+}
+
+@media (max-width: 960px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-page__visual,
+  .login-page__eclipse {
+    display: none;
+  }
+
+  .login-page__form-body {
+    justify-content: center;
+    padding: 2rem 0 6rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page__form-panel {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .login-page__form-body {
+    align-items: flex-start;
+    padding-top: 2.5rem;
+  }
+
+  .login-page__rays-bottom {
+    width: 9rem;
+  }
+}
+
+.login-card__form {
+  display: grid;
+  gap: 1rem;
+}

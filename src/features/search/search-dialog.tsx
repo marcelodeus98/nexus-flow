@@ -1,11 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { SearchIcon } from 'lucide-react'
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Kbd,
+  Modal,
+  ScrollArea,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core'
+import { IconSearch } from '@tabler/icons-react'
 import { useDeferredValue, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate } from 'react-router-dom'
 import { http } from '@/shared/api/http'
-import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
 
 type Hit = {
   id: string
@@ -52,91 +60,108 @@ export function SearchDialog() {
   return (
     <>
       <Button
-        variant="outline"
-        size="sm"
-        className="hidden w-56 justify-start text-muted-foreground md:inline-flex"
+        variant="default"
+        size="xs"
+        w={220}
+        visibleFrom="md"
+        justify="space-between"
+        leftSection={<IconSearch size={14} />}
+        rightSection={<Kbd size="xs">Ctrl K</Kbd>}
+        c="dimmed"
+        fw={400}
         onClick={() => setOpen(true)}
       >
-        <SearchIcon /> Buscar cards
-        <kbd className="ml-auto rounded border px-1 text-[10px]">Ctrl K</kbd>
+        Buscar cards
       </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="md:hidden"
+      <ActionIcon
+        variant="subtle"
+        c="gray.6"
+        hiddenFrom="md"
         aria-label="Buscar cards"
         onClick={() => setOpen(true)}
       >
-        <SearchIcon />
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="top-24 translate-y-0 gap-0 p-0 sm:max-w-lg"
-          showCloseButton={false}
-        >
-          <DialogTitle className="sr-only">Buscar cards</DialogTitle>
-          <div className="flex items-center gap-2 border-b px-3">
-            <SearchIcon className="size-4 text-muted-foreground" aria-hidden />
-            <Input
-              autoFocus
-              value={text}
-              onChange={(e) => {
-                setText(e.target.value)
-                setSelected(0)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  setSelected((i) => Math.min(i + 1, hits.length - 1))
-                }
-                if (e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  setSelected((i) => Math.max(i - 1, 0))
-                }
-                if (e.key === 'Enter' && hits[selected]) go(hits[selected])
-              }}
-              placeholder="Título do card ou chave (NEXA-12)"
-              aria-label="Buscar cards"
-              role="combobox"
-              aria-expanded={hits.length > 0}
-              aria-controls="search-results"
-              className="h-11 border-0 shadow-none focus-visible:ring-0"
-            />
-          </div>
-          <ul id="search-results" role="listbox" className="max-h-80 overflow-y-auto p-1">
+        <IconSearch size={18} stroke={1.6} />
+      </ActionIcon>
+      <Modal
+        opened={open}
+        onClose={() => setOpen(false)}
+        withCloseButton={false}
+        padding={0}
+        size="lg"
+        yOffset="6rem"
+        title={<span className="visually-hidden">Buscar cards</span>}
+        styles={{ header: { display: 'none' } }}
+      >
+        <TextInput
+          autoFocus
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value)
+            setSelected(0)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setSelected((i) => Math.min(i + 1, hits.length - 1))
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setSelected((i) => Math.max(i - 1, 0))
+            }
+            if (e.key === 'Enter' && hits[selected]) go(hits[selected])
+          }}
+          placeholder="Título do card ou chave (NEXA-12)"
+          aria-label="Buscar cards"
+          role="combobox"
+          aria-expanded={hits.length > 0}
+          aria-controls="search-results"
+          leftSection={<IconSearch size={16} />}
+          variant="unstyled"
+          size="md"
+          px="sm"
+          style={{ borderBottom: '1px solid var(--nexa-border)' }}
+        />
+        <ScrollArea.Autosize mah={320}>
+          <Stack id="search-results" role="listbox" gap={2} p={4}>
             {query.length >= 2 && results.isSuccess && hits.length === 0 && (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <Text size="sm" c="dimmed" ta="center" py="lg">
                 Nenhum card encontrado.
-              </li>
+              </Text>
             )}
             {query.length < 2 && (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <Text size="sm" c="dimmed" ta="center" py="lg">
                 Digite ao menos 2 caracteres.
-              </li>
+              </Text>
             )}
             {hits.map((hit, index) => (
-              <li
+              <Box
                 key={hit.id}
                 role="option"
                 aria-selected={index === selected}
-                className={`cursor-pointer rounded-md px-3 py-2 text-sm ${
-                  index === selected ? 'bg-accent' : ''
-                }`}
+                px="sm"
+                py={6}
+                style={{
+                  cursor: 'pointer',
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  background: index === selected ? 'var(--nexa-teal-50)' : undefined,
+                }}
                 onMouseEnter={() => setSelected(index)}
                 onClick={() => go(hit)}
               >
-                <span className="font-mono text-xs text-muted-foreground">
-                  {hit.projectKey}-{hit.number}
-                </span>{' '}
-                {hit.title}
-                <span className="block text-xs text-muted-foreground">
+                <Text size="sm">
+                  <Text span ff="monospace" size="xs" c="dimmed">
+                    {hit.projectKey}-{hit.number}
+                  </Text>{' '}
+                  {hit.title}
+                </Text>
+                <Text size="xs" c="dimmed">
                   {hit.projectName} · {hit.columnName}
-                </span>
-              </li>
+                </Text>
+              </Box>
             ))}
-          </ul>
-        </DialogContent>
-      </Dialog>
+          </Stack>
+        </ScrollArea.Autosize>
+      </Modal>
     </>
   )
 }

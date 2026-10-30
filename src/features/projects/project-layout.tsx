@@ -1,5 +1,6 @@
-import { ArchiveIcon } from 'lucide-react'
-import { Link, Outlet, useLocation, useParams } from 'react-router'
+import { Badge, Group, Stack, Tabs, Text, Title } from '@mantine/core'
+import { IconArchive } from '@tabler/icons-react'
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useProjectRealtime } from '@/features/board/use-project-realtime'
 import { ApiError } from '@/shared/api/http'
 import { apiErrorMessage } from '@/shared/api/errors'
@@ -10,17 +11,23 @@ import { useCan, useProject } from './api'
 export function ProjectLayout() {
   const { projectKey = '' } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const project = useProject(projectKey)
   const can = useCan(projectKey)
   useProjectRealtime(project.data?.id, project.data?.key)
 
-  if (project.isPending) return <p className="text-sm text-muted-foreground">Carregando…</p>
+  if (project.isPending)
+    return (
+      <Text size="sm" c="dimmed">
+        Carregando…
+      </Text>
+    )
   if (project.isError) {
     const notFound = project.error instanceof ApiError && project.error.status === 404
     return (
-      <p className="text-sm text-destructive">
+      <Text size="sm" c="red">
         {notFound ? 'Projeto não encontrado ou sem acesso.' : apiErrorMessage(project.error)}
-      </p>
+      </Text>
     )
   }
 
@@ -28,11 +35,12 @@ export function ProjectLayout() {
   const onSettings = section === 'settings'
   const onBacklog = section === 'backlog' || section === 'sprints'
   const onReports = section === 'reports'
+  const onTests = section === 'tests'
   const tabs = [
     {
       to: `/p/${project.data.key}`,
       label: 'Board',
-      active: !onSettings && !onBacklog && !onReports,
+      active: !onSettings && !onBacklog && !onReports && !onTests,
       show: true,
     },
     {
@@ -40,6 +48,12 @@ export function ProjectLayout() {
       label: 'Backlog e sprints',
       active: onBacklog,
       show: project.data.methodology !== 'KANBAN',
+    },
+    {
+      to: `/p/${project.data.key}/tests`,
+      label: 'Casos de teste',
+      active: onTests,
+      show: true,
     },
     {
       to: `/p/${project.data.key}/reports`,
@@ -55,40 +69,39 @@ export function ProjectLayout() {
     },
   ]
 
+  const visibleTabs = tabs.filter((tab) => tab.show)
+  const activeTab = visibleTabs.find((tab) => tab.active)?.to ?? null
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="flex items-center gap-2 text-xl font-semibold">
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
-            {project.data.key}
-          </span>
-          {project.data.name}
-        </h1>
+    <Stack gap="md">
+      <Group gap="md" wrap="wrap">
+        <Title order={2}>
+          <Group gap="xs" component="span">
+            <Badge variant="light" radius="sm" size="lg" ff="monospace">
+              {project.data.key}
+            </Badge>
+            {project.data.name}
+          </Group>
+        </Title>
         {project.data.status === 'ARCHIVED' && (
-          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-            <ArchiveIcon className="size-4" aria-hidden /> Arquivado (somente leitura)
-          </span>
+          <Group gap={4}>
+            <IconArchive size={16} aria-hidden color="var(--nexa-slate)" />
+            <Text size="sm" c="dimmed">
+              Arquivado (somente leitura)
+            </Text>
+          </Group>
         )}
-        <nav className="flex gap-1">
-          {tabs
-            .filter((tab) => tab.show)
-            .map((tab) => (
-              <Link
-                key={tab.to}
-                to={tab.to}
-                aria-current={tab.active ? 'page' : undefined}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                  tab.active
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-              </Link>
-            ))}
-        </nav>
-      </div>
+      </Group>
+      <Tabs value={activeTab} onChange={(to) => to && void navigate(to)}>
+        <Tabs.List>
+          {visibleTabs.map((tab) => (
+            <Tabs.Tab key={tab.to} value={tab.to}>
+              {tab.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
       <Outlet context={project.data} />
-    </div>
+    </Stack>
   )
 }

@@ -1,20 +1,22 @@
-import { MoreHorizontalIcon, PlusIcon } from 'lucide-react'
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Checkbox,
+  ColorSwatch,
+  Group,
+  Menu,
+  Paper,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+} from '@mantine/core'
+import { IconDots, IconPlus, IconSearch } from '@tabler/icons-react'
 import { useDeferredValue, useState } from 'react'
-import { toast } from 'sonner'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { useSessionState } from '@/shared/auth/session-store'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Checkbox } from '@/shared/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { toast } from '@/shared/notify/toast'
 import { useSetUserStatus, useUsers, type User } from './api'
 import { UserDialog } from './user-dialog'
 
@@ -44,125 +46,130 @@ export function UsersPage() {
     )
   }
 
+  const message = (text: string) => (
+    <Table.Tr>
+      <Table.Td colSpan={5}>
+        <Text size="sm" c="dimmed" ta="center" py="lg">
+          {text}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  )
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
+    <Stack gap="md">
+      <Group gap="md">
+        <TextInput
           type="search"
           placeholder="Buscar por nome ou e-mail"
           aria-label="Buscar usuários"
+          leftSection={<IconSearch size={16} />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          w={320}
         />
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="include-inactive"
-            checked={includeInactive}
-            onCheckedChange={(checked) => setIncludeInactive(checked === true)}
-          />
-          <Label htmlFor="include-inactive">Mostrar desativados</Label>
-        </div>
-        <Button className="ml-auto" onClick={() => setEditing(null)}>
-          <PlusIcon /> Novo usuário
+        <Checkbox
+          label="Mostrar desativados"
+          checked={includeInactive}
+          onChange={(e) => setIncludeInactive(e.currentTarget.checked)}
+        />
+        <Button ml="auto" leftSection={<IconPlus size={16} />} onClick={() => setEditing(null)}>
+          Novo usuário
         </Button>
-      </div>
+      </Group>
 
-      <div className="rounded-lg border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Papel</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12">
-                <span className="sr-only">Ações</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <Paper withBorder radius="md">
+        <Table verticalSpacing="sm" highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nome</Table.Th>
+              <Table.Th>Departamento</Table.Th>
+              <Table.Th>Papel</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th w={48}>
+                <span className="visually-hidden">Ações</span>
+              </Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {rows.map((user) => (
-              <TableRow key={user.id} className={user.isActive ? undefined : 'opacity-60'}>
-                <TableCell>
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-xs text-muted-foreground">
+              <Table.Tr key={user.id} opacity={user.isActive ? 1 : 0.6}>
+                <Table.Td>
+                  <Text size="sm" fw={500}>
+                    {user.name}
+                  </Text>
+                  <Text size="xs" c="dimmed">
                     {user.email}
                     {user.jobTitle && ` · ${user.jobTitle}`}
-                  </div>
-                </TableCell>
-                <TableCell>
+                  </Text>
+                </Table.Td>
+                <Table.Td>
                   {user.department ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="size-2.5 rounded-full"
-                        style={{ backgroundColor: user.department.color }}
-                        aria-hidden
-                      />
-                      {user.department.name}
-                    </span>
+                    <Group gap="xs" wrap="nowrap">
+                      <ColorSwatch color={user.department.color} size={10} />
+                      <Text size="sm">{user.department.name}</Text>
+                    </Group>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <Text c="dimmed">—</Text>
                   )}
-                </TableCell>
-                <TableCell>
+                </Table.Td>
+                <Table.Td>
                   {user.globalRole === 'ADMIN' ? (
                     <Badge>Administrador</Badge>
                   ) : (
-                    <Badge variant="secondary">Usuário</Badge>
+                    <Badge color="gray" variant="light">
+                      Usuário
+                    </Badge>
                   )}
-                </TableCell>
-                <TableCell>{user.isActive ? 'Ativo' : 'Desativado'}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" aria-label={`Ações de ${user.name}`}>
-                        <MoreHorizontalIcon />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setEditing(user)}>Editar</DropdownMenuItem>
+                </Table.Td>
+                <Table.Td>{user.isActive ? 'Ativo' : 'Desativado'}</Table.Td>
+                <Table.Td>
+                  <Menu position="bottom-end" withinPortal>
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        aria-label={`Ações de ${user.name}`}
+                      >
+                        <IconDots size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => setEditing(user)}>Editar</Menu.Item>
                       {user.id !== currentUserId && (
-                        <DropdownMenuItem
-                          variant={user.isActive ? 'destructive' : 'default'}
-                          onSelect={() => toggleStatus(user)}
+                        <Menu.Item
+                          color={user.isActive ? 'red' : undefined}
+                          onClick={() => toggleStatus(user)}
                         >
                           {user.isActive ? 'Desativar' : 'Reativar'}
-                        </DropdownMenuItem>
+                        </Menu.Item>
                       )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Table.Td>
+              </Table.Tr>
             ))}
-            {users.isSuccess && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                  Nenhum usuário encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-            {users.isPending && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                  Carregando…
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
+            {users.isSuccess && rows.length === 0 && message('Nenhum usuário encontrado.')}
+            {users.isPending && message('Carregando…')}
+          </Table.Tbody>
         </Table>
-      </div>
+      </Paper>
 
       {users.hasNextPage && (
         <Button
-          variant="outline"
+          variant="default"
+          w="fit-content"
           onClick={() => void users.fetchNextPage()}
-          disabled={users.isFetchingNextPage}
+          loading={users.isFetchingNextPage}
         >
           Carregar mais
         </Button>
       )}
-      {users.isError && <p className="text-sm text-destructive">{apiErrorMessage(users.error)}</p>}
+      {users.isError && (
+        <Text size="sm" c="red">
+          {apiErrorMessage(users.error)}
+        </Text>
+      )}
 
       {editing !== undefined && (
         <UserDialog
@@ -171,6 +178,6 @@ export function UsersPage() {
           onClose={() => setEditing(undefined)}
         />
       )}
-    </div>
+    </Stack>
   )
 }

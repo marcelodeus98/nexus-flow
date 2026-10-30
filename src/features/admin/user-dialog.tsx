@@ -1,22 +1,23 @@
-import { useState, type FormEvent } from 'react'
-import { toast } from 'sonner'
-import { apiErrorMessage } from '@/shared/api/errors'
-import { Button } from '@/shared/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+  Button,
+  Group,
+  Modal,
+  PasswordInput,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core'
+import { useState, type FormEvent } from 'react'
+import { apiErrorMessage } from '@/shared/api/errors'
+import { toast } from '@/shared/notify/toast'
 import { useDepartments, useSaveUser, type GlobalRole, type User } from './api'
-import { FormField } from './form-field'
 
-// Radix Select cannot hold an empty value.
-const NO_DEPARTMENT = 'none'
+const roleOptions = [
+  { value: 'USER', label: 'Usuário' },
+  { value: 'ADMIN', label: 'Administrador' },
+]
 
 export function UserDialog({
   user,
@@ -33,7 +34,7 @@ export function UserDialog({
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [jobTitle, setJobTitle] = useState(user?.jobTitle ?? '')
-  const [departmentId, setDepartmentId] = useState(user?.departmentId ?? NO_DEPARTMENT)
+  const [departmentId, setDepartmentId] = useState<string | null>(user?.departmentId ?? null)
   const [globalRole, setGlobalRole] = useState<GlobalRole>(user?.globalRole ?? 'USER')
   const [password, setPassword] = useState('')
 
@@ -45,7 +46,7 @@ export function UserDialog({
         name: name.trim(),
         email: email.trim(),
         jobTitle: jobTitle.trim() || null,
-        departmentId: departmentId === NO_DEPARTMENT ? null : departmentId,
+        departmentId,
         // The API refuses an admin changing their own role; don't send it.
         ...(!isSelf && { globalRole }),
         ...(!user && password && { password }),
@@ -62,85 +63,67 @@ export function UserDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={submit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>{user ? 'Editar usuário' : 'Novo usuário'}</DialogTitle>
-            <DialogDescription>
-              {user
-                ? 'As mudanças de papel valem a partir do próximo acesso (até 15 minutos).'
-                : 'Sem senha inicial, a pessoa entra com Google ou usa "Esqueci minha senha".'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <FormField label="Nome">
-            <Input value={name} onChange={(e) => setName(e.target.value)} minLength={2} required />
-          </FormField>
-          <FormField label="E-mail">
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </FormField>
-          <FormField label="Cargo">
-            <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
-          </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Departamento">
-              <Select value={departmentId} onValueChange={setDepartmentId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_DEPARTMENT}>Nenhum</SelectItem>
-                  {departments.data?.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-            <FormField
-              label="Papel"
-              hint={isSelf ? 'Você não pode mudar o próprio papel.' : undefined}
-            >
-              <Select
-                value={globalRole}
-                onValueChange={(value) => setGlobalRole(value as GlobalRole)}
-                disabled={isSelf}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USER">Usuário</SelectItem>
-                  <SelectItem value="ADMIN">Administrador</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-          </div>
-          {!user && (
-            <FormField label="Senha inicial (opcional)" hint="Mínimo de 8 caracteres.">
-              <Input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
-                maxLength={128}
-              />
-            </FormField>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Salvando…' : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Modal opened onClose={onClose} title={user ? 'Editar usuário' : 'Novo usuário'}>
+      <Stack component="form" gap="md" onSubmit={submit}>
+        <Text size="sm" c="dimmed">
+          {user
+            ? 'As mudanças de papel valem a partir do próximo acesso (até 15 minutos).'
+            : 'Sem senha inicial, a pessoa entra com Google ou usa "Esqueci minha senha".'}
+        </Text>
+        <TextInput
+          label="Nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          minLength={2}
+          required
+        />
+        <TextInput
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <TextInput label="Cargo" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Select
+            label="Departamento"
+            placeholder="Nenhum"
+            clearable
+            value={departmentId}
+            onChange={setDepartmentId}
+            data={(departments.data ?? []).map((d) => ({ value: d.id, label: d.name }))}
+          />
+          <Select
+            label="Papel"
+            description={isSelf ? 'Você não pode mudar o próprio papel.' : undefined}
+            value={globalRole}
+            onChange={(value) => value && setGlobalRole(value as GlobalRole)}
+            disabled={isSelf}
+            allowDeselect={false}
+            data={roleOptions}
+          />
+        </SimpleGrid>
+        {!user && (
+          <PasswordInput
+            label="Senha inicial (opcional)"
+            description="Mínimo de 8 caracteres."
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            maxLength={128}
+          />
+        )}
+        <Group justify="flex-end" mt="sm">
+          <Button variant="default" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={save.isPending}>
+            Salvar
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

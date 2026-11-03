@@ -42,10 +42,12 @@ export type Preference = { type: NotificationType; inApp: boolean; email: boolea
 
 const key = ['notifications'] as const
 
+// The socket pushes new ones; polling covers a dropped connection.
 export function useNotifications() {
   return useQuery({
     queryKey: key,
     queryFn: () => http<NotificationPage>('/notifications?limit=30'),
+    refetchInterval: 60_000,
   })
 }
 
@@ -69,9 +71,13 @@ export function useNotificationStream() {
       const { title, path } = notificationText(notification)
       toast.action(title, 'Abrir', () => void navigate(path))
     }
+    // After a reconnect, catch up on what arrived while offline.
+    const onConnect = () => void queryClient.invalidateQueries({ queryKey: key, exact: true })
     socket.on('notification.new', onNew)
+    socket.on('connect', onConnect)
     return () => {
       socket.off('notification.new', onNew)
+      socket.off('connect', onConnect)
     }
   }, [queryClient, navigate])
 }

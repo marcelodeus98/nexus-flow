@@ -59,7 +59,10 @@ export function NotificationBell() {
             variant="subtle"
             c="gray.6"
             aria-label={unread ? `Notificações (${unread} não lidas)` : 'Notificações'}
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => {
+              if (!open) void notifications.refetch()
+              setOpen((o) => !o)
+            }}
           >
             <IconBell size={18} stroke={1.6} />
           </ActionIcon>

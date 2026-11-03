@@ -109,15 +109,34 @@ export function BoardPage() {
     () => new Map((board.data?.cards ?? []).map((card) => [card.id, card])),
     [board.data],
   )
+  // Why the view leaves a card out, if it does.
+  const hiddenBy = (card: CardSummary) => {
+    // undefined: no filter; null: no active sprint, so nothing to show.
+    if (sprintFilter === null || (sprintFilter !== undefined && card.sprintId !== sprintFilter))
+      return 'sprint'
+    if (filtering && !matchesFilter(card, filter, { userId, today })) return 'filter'
+    return null
+  }
   // Card ids per column, in rank order (cheap even for 500 cards).
   const placementFromCache: Placement = {}
   for (const column of board.data?.columns ?? []) placementFromCache[column.id] = []
   for (const card of board.data?.cards ?? []) {
-    // undefined: no filter; null: no active sprint, so nothing to show.
-    if (sprintFilter === null || (sprintFilter !== undefined && card.sprintId !== sprintFilter))
-      continue
-    if (filtering && !matchesFilter(card, filter, { userId, today })) continue
+    if (hiddenBy(card)) continue
     placementFromCache[card.columnId]?.push(card.id)
+  }
+
+  // A new card is out of any sprint, so "Sprint ativa" (or a filter) hides it
+  // right away: say so instead of letting it vanish.
+  function onCreated(card: CardSummary) {
+    const reason = hiddenBy(card)
+    if (!reason) return
+    toast.action(
+      reason === 'sprint'
+        ? `${project.key}-${card.number} criado no backlog, fora da sprint ativa`
+        : `${project.key}-${card.number} criado, mas os filtros o escondem`,
+      'Abrir card',
+      () => void navigate(`c/${card.number}`),
+    )
   }
   const placement = dragging?.placement ?? placementFromCache
 
@@ -290,7 +309,16 @@ export function BoardPage() {
         )}
       </Stack>
 
-      {view === 'list' && <ListView columns={columns} cardsIn={cardsIn} lookups={lookups} />}
+      {view === 'list' && (
+        <ListView
+          projectId={project.id}
+          columns={columns}
+          cardsIn={cardsIn}
+          lookups={lookups}
+          canCreate={!readOnly && can('card:create')}
+          onCreated={onCreated}
+        />
+      )}
       {view === 'calendar' && (
         <CalendarView
           columns={columns}
@@ -317,6 +345,7 @@ export function BoardPage() {
                 lookups={lookups}
                 canCreate={!readOnly && can('card:create')}
                 canMove={!readOnly && can('card:move')}
+                onCreated={onCreated}
                 className={column.id === visibleMobileColumn ? '' : 'board-column--mobile-hidden'}
               />
             ))}

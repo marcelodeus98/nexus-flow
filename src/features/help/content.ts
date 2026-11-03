@@ -274,7 +274,8 @@ export const topics: HelpTopic[] = [
       {
         q: 'Como crio um card?',
         a: [
-          'No board, clique em "Adicionar card" no pé da coluna, escreva o título e pressione Enter. Marque "É um bug" para criar um bug. Depois clique no card para preencher o resto.',
+          'No board, clique em "Adicionar card" no pé da coluna (no Quadro) ou no fim do grupo da coluna (na Lista), escreva o título e pressione Enter. Marque "É um bug" para criar um bug. Depois clique no card para preencher o resto.',
+          'O card novo nasce no backlog, fora de qualquer sprint. Se o board estiver mostrando só a "Sprint ativa", ele não aparece: um aviso traz o link para abri-lo. Para colocá-lo na sprint, use Backlog e sprints.',
         ],
       },
       {

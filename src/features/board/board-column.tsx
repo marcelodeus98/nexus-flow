@@ -15,6 +15,7 @@ export function BoardColumn({
   lookups,
   canCreate,
   canMove,
+  onCreated,
   className = '',
 }: {
   projectId: string
@@ -23,6 +24,7 @@ export function BoardColumn({
   lookups: CardLookups
   canCreate: boolean
   canMove: boolean
+  onCreated?: (card: CardSummary) => void
   className?: string
 }) {
   // The whole column receives drops: header, empty space, below the last card.
@@ -54,12 +56,23 @@ export function BoardColumn({
           ))}
         </ul>
       </SortableContext>
-      {canCreate && <AddCard projectId={projectId} columnId={column.id} />}
+      {canCreate && <AddCard projectId={projectId} columnId={column.id} onCreated={onCreated} />}
     </section>
   )
 }
 
-function AddCard({ projectId, columnId }: { projectId: string; columnId: string }) {
+// Also used under each column's group in the list view.
+export function AddCard({
+  projectId,
+  columnId,
+  onCreated,
+  className = 'board-column__add',
+}: {
+  projectId: string
+  columnId: string
+  onCreated?: (card: CardSummary) => void
+  className?: string
+}) {
   const create = useCreateCard(projectId)
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
@@ -75,6 +88,7 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
     create.mutate(
       { title: trimmed, columnId, ...(isBug && { type: 'BUG' as const }) },
       {
+        onSuccess: (card) => onCreated?.(card),
         onError: (error) => {
           toast.error(apiErrorMessage(error))
           setTitle((current) => current || trimmed)
@@ -85,7 +99,7 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
 
   if (!open) {
     return (
-      <div className="board-column__add">
+      <div className={className}>
         <Button
           variant="subtle"
           color="gray"
@@ -101,7 +115,7 @@ function AddCard({ projectId, columnId }: { projectId: string; columnId: string 
     )
   }
   return (
-    <form onSubmit={submit} className="board-column__add">
+    <form onSubmit={submit} className={className}>
       <Stack gap="xs">
         <Textarea
           autoFocus

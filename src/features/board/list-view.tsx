@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { severityColors, severityLabels } from '@/features/qa/bug-severity'
 import { columnColor, priorityLabels, type BoardColumn, type CardSummary } from './api'
 import type { CardLookups } from './board-card'
+import { AddCard } from './board-column'
 import { estimateLabel, initials } from './card-format'
 import './views.css'
 
@@ -23,13 +24,19 @@ const sorters: Record<Exclude<Sort, 'board'>, (a: CardSummary, b: CardSummary) =
 // many cards, compare fields and find what has no owner or due date. The
 // filters and the sprint scope above apply here too.
 export function ListView({
+  projectId,
   columns,
   cardsIn,
   lookups,
+  canCreate,
+  onCreated,
 }: {
+  projectId: string
   columns: BoardColumn[]
   cardsIn: (columnId: string) => CardSummary[]
   lookups: CardLookups
+  canCreate: boolean
+  onCreated: (card: CardSummary) => void
 }) {
   const navigate = useNavigate()
   const [sort, setSort] = useState<Sort>('board')
@@ -98,12 +105,24 @@ export function ListView({
                     onOpen={() => void navigate(`c/${card.number}`)}
                   />
                 ))}
-                {cards.length === 0 && (
+                {cards.length === 0 && !canCreate && (
                   <Table.Tr>
                     <Table.Td colSpan={6}>
                       <Text size="xs" c="dimmed" pl="lg">
                         Nenhum card.
                       </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                {canCreate && (
+                  <Table.Tr>
+                    <Table.Td colSpan={6}>
+                      <AddCard
+                        projectId={projectId}
+                        columnId={column.id}
+                        onCreated={onCreated}
+                        className="list-view__add"
+                      />
                     </Table.Td>
                   </Table.Tr>
                 )}

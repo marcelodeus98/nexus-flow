@@ -54,6 +54,8 @@ export function ReviewSection({
       Promise.all([
         queryClient.invalidateQueries({ queryKey: cardKeys.reviews(card.id) }),
         queryClient.invalidateQueries({ queryKey: cardKeys.byNumber(projectId, card.number) }),
+        // An approved card leaves the testing queue.
+        queryClient.invalidateQueries({ queryKey: ['qa', 'queue'] }),
       ]),
   })
 

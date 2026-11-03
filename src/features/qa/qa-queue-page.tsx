@@ -10,10 +10,12 @@ import './qa-queue-page.css'
 type QueuedCard = CardSummary & {
   project: { id: string; key: string; name: string }
   columnName: string
+  // When the card entered testing this time.
+  testingSince: string
 }
 
-// Cards waiting in "Em teste" columns, oldest first, in every project where
-// the user can validate (QA, PO, manager).
+// Cards waiting in "Em teste" columns and not approved yet, longest waiting
+// first, in every project where the user can validate (QA, PO, manager).
 export function QaQueuePage() {
   const queue = useQuery({
     queryKey: ['qa', 'queue'],
@@ -69,10 +71,12 @@ export function QaQueuePage() {
                   </Badge>
                 )}
                 <Text size="xs" c="dimmed" className="qa-queue__since">
-                  desde{' '}
-                  {new Date(card.updatedAt).toLocaleDateString('pt-BR', {
+                  em teste desde{' '}
+                  {new Date(card.testingSince).toLocaleString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </Text>
               </li>

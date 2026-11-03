@@ -22,7 +22,6 @@ export type User = {
   departmentId: string | null
   department: { id: string; name: string; color: string } | null
   hasPassword: boolean
-  hasGoogle: boolean
   createdAt: string
 }
 

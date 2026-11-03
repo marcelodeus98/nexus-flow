@@ -17,7 +17,6 @@ const ana: User = {
   departmentId: 'd1',
   department: { id: 'd1', name: 'Desenvolvimento', color: '#2563EB' },
   hasPassword: true,
-  hasGoogle: false,
   createdAt: '2026-10-28T00:00:00.000Z',
 }
 

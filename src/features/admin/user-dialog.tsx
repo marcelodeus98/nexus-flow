@@ -68,7 +68,7 @@ export function UserDialog({
         <Text size="sm" c="dimmed">
           {user
             ? 'As mudanças de papel valem a partir do próximo acesso (até 15 minutos).'
-            : 'Sem senha inicial, a pessoa entra com Google ou usa "Esqueci minha senha".'}
+            : 'Sem senha inicial, a pessoa define a sua em "Esqueci minha senha".'}
         </Text>
         <TextInput
           label="Nome"

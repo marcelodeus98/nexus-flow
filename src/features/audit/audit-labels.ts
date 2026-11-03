@@ -201,7 +201,6 @@ const valueLabels: Record<string, string> = {
   TIMER: 'timer',
   GENERAL: 'Geral',
   password: 'e-mail e senha',
-  google: 'Google',
   ORIGIN: 'Origem',
   TARGET: 'Destino',
   INVOLVED: 'Envolvido',

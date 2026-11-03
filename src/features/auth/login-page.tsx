@@ -1,16 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '@/shared/api/http'
-import { Anchor, Button } from '@mantine/core'
-import { googleSignInUrl, login, useAuthProviders } from './api'
+import { Anchor } from '@mantine/core'
+import { login } from './api'
 import { AuthCard, Field, FormMessage, SubmitButton } from './auth-card'
-
-// Codes the API puts in ?error= when Google sign-in fails.
-const googleErrors: Record<string, string> = {
-  google_failed: 'Não foi possível entrar com o Google. Tente novamente.',
-  google_domain: 'Use sua conta Google corporativa.',
-  google_not_registered: 'Sua conta ainda não tem acesso. Peça a um administrador.',
-}
 
 function loginErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 401) return 'E-mail ou senha inválidos.'
@@ -22,22 +15,17 @@ function loginErrorMessage(error: unknown): string {
 export function LoginPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const providers = useAuthProviders()
   const mutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       login(email, password),
     onSuccess: () => navigate(safeNext(params.get('next')), { replace: true }),
   })
 
-  const urlError = googleErrors[params.get('error') ?? '']
-  const passwordEnabled = providers.data?.password ?? true
-
   return (
     <AuthCard
       title="Entrar"
       description="Use seu e-mail e senha para acessar o Nexa Flow. Sem cadastro? Fale com um administrador."
     >
-      {urlError && <FormMessage tone="error">{urlError}</FormMessage>}
       {params.get('reset') === 'ok' && (
         <FormMessage tone="info">Senha alterada. Entre com a nova senha.</FormMessage>
       )}
@@ -45,40 +33,32 @@ export function LoginPage() {
         <FormMessage tone="error">{loginErrorMessage(mutation.error)}</FormMessage>
       )}
 
-      {passwordEnabled && (
-        <form
-          className="login-card__form"
-          onSubmit={(event) => {
-            event.preventDefault()
-            const form = new FormData(event.currentTarget)
-            mutation.mutate({
-              email: String(form.get('email')),
-              password: String(form.get('password')),
-            })
-          }}
-        >
-          <Field label="E-mail" name="email" type="email" autoComplete="username" required />
-          <Field
-            label="Senha"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-          <SubmitButton pending={mutation.isPending}>
-            {mutation.isPending ? 'Entrando…' : 'Entrar'}
-          </SubmitButton>
-          <Anchor component={Link} to="/forgot-password" className="login-card__link" ta="center">
-            Esqueci minha senha
-          </Anchor>
-        </form>
-      )}
-
-      {providers.data?.google && (
-        <Button component="a" href={googleSignInUrl} variant="default" size="md" fullWidth>
-          Entrar com Google
-        </Button>
-      )}
+      <form
+        className="login-card__form"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const form = new FormData(event.currentTarget)
+          mutation.mutate({
+            email: String(form.get('email')),
+            password: String(form.get('password')),
+          })
+        }}
+      >
+        <Field label="E-mail" name="email" type="email" autoComplete="username" required />
+        <Field
+          label="Senha"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+        <SubmitButton pending={mutation.isPending}>
+          {mutation.isPending ? 'Entrando…' : 'Entrar'}
+        </SubmitButton>
+        <Anchor component={Link} to="/forgot-password" className="login-card__link" ta="center">
+          Esqueci minha senha
+        </Anchor>
+      </form>
     </AuthCard>
   )
 }

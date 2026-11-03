@@ -11,9 +11,8 @@ import { LoginPage } from './login-page'
 
 const json = (status: number, body: unknown): [number, unknown] => [status, body]
 
-function mockApi(loginResponse: [number, unknown], providers = { password: true, google: false }) {
+function mockApi(loginResponse: [number, unknown]) {
   return mockClient(({ url }) => {
-    if (url?.endsWith('/auth/providers')) return [200, providers]
     if (url?.endsWith('/auth/login')) return loginResponse
     throw new Error(`Unexpected request to ${url}`)
   })
@@ -80,16 +79,5 @@ describe('LoginPage', () => {
     await submit('ana@magistter.com.br', 'wrong')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha inválidos.')
-  })
-
-  it('offers Google only when the API has it configured', async () => {
-    mockApi(json(401, {}), { password: true, google: true })
-    renderLogin('/login?error=google_domain')
-
-    expect(await screen.findByRole('link', { name: 'Entrar com Google' })).toHaveAttribute(
-      'href',
-      '/api/v1/auth/google',
-    )
-    expect(screen.getByRole('alert')).toHaveTextContent('Use sua conta Google corporativa.')
   })
 })

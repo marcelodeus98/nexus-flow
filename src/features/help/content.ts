@@ -300,7 +300,7 @@ export const topics: HelpTopic[] = [
           'Uma subtarefa pode ter as próprias subtarefas. Exemplo:',
           {
             list: [
-              'História "Login com Google" → subtarefas "Front" e "Backend".',
+              'História "Login por e-mail" → subtarefas "Front" e "Backend".',
               'Abra "Backend" e crie as dele: "Endpoint de callback", "Vincular conta", "Testes".',
             ],
           },
@@ -521,7 +521,8 @@ export const topics: HelpTopic[] = [
       {
         q: 'O que coloca um card na Fila de testes?',
         a: [
-          'Estar numa coluna da categoria "Em teste", num projeto ativo em que você pode validar. O card sai da fila quando é reprovado, concluído ou movido para outra coluna. Só "Aprovar" registra a aprovação, mas mantém o card na coluna até alguém movê-lo.',
+          'Estar numa coluna da categoria "Em teste", ainda sem aprovação, num projeto ativo em que você pode validar. O card sai da fila quando é aprovado, reprovado ou movido para outra coluna. Com "Aprovar" (sem concluir), ele continua na coluna "Em teste" até alguém movê-lo, mas já não aparece na fila.',
+          'A fila mostra primeiro quem espera há mais tempo. O "em teste desde" é a hora em que o card entrou na coluna desta vez: se ele foi reprovado e voltou, conta a partir da volta.',
         ],
       },
       {
@@ -604,14 +605,18 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Quando alguém te atribui um card ou te menciona num comentário.',
+              'Quando outra pessoa te atribui um card ou te menciona num comentário.',
               'Quando comentam num card que você segue.',
-              'Na véspera do prazo e quando um card seu atrasa.',
-              'Quando seu card é aprovado ou reprovado pelo QA.',
+              'Na véspera do prazo e quando um card seu atrasa (às 8h).',
+              'Quando seu card é aprovado ou reprovado pelo QA (vale para os responsáveis; sem responsáveis, para quem segue o card).',
               'Quando o timer fica ligado muito tempo e quando uma exportação fica pronta.',
             ],
           },
-          'Você nunca é notificado do que você mesmo fez. Em Notificações (sidebar), escolha por tipo se quer receber no sistema, por e-mail ou nos dois.',
+          'Você nunca é notificado do que você mesmo fez: se você se atribui um card ou comenta no seu próprio card, nada chega. Para testar, peça a outra pessoa para fazer a ação.',
+          'No sistema, a notificação aparece na hora como um aviso no canto da tela e no sino do topo, com o número das não lidas. Em Notificações (sidebar), escolha por tipo se quer receber no sistema, por e-mail ou nos dois.',
+          {
+            tip: 'Os e-mails só saem se a administração configurou o servidor de e-mail (Administração → E-mail (SMTP)).',
+          },
         ],
       },
       {
@@ -622,6 +627,7 @@ export const topics: HelpTopic[] = [
               'Usuários: cadastro, papel no sistema (Administrador ou Usuário), departamento e desativação.',
               'Departamentos e Times: os times agrupam pessoas para vincular a projetos de uma vez.',
               'Tags globais: tags que aparecem em todos os projetos.',
+              'E-mail (SMTP): o servidor por onde saem as notificações por e-mail e os links de redefinição de senha.',
               'Auditoria: o registro de tudo o que foi feito no sistema, que não pode ser alterado nem apagado.',
             ],
           },
@@ -632,6 +638,25 @@ export const topics: HelpTopic[] = [
         q: 'Esqueci minha senha. E agora?',
         a: [
           'Na tela de login, clique em "Esqueci minha senha" e informe seu e-mail: chega um link válido por 1 hora para definir uma nova. Se o e-mail não chegar, peça a um administrador.',
+          'O acesso é sempre com e-mail e senha. Quem é cadastrado sem senha inicial define a sua pelo "Esqueci minha senha".',
+        ],
+      },
+      {
+        q: 'Como configuro o envio de e-mails?',
+        a: [
+          'Em Administração → E-mail (SMTP), um administrador informa os dados do servidor do provedor de e-mail (Gmail, Outlook, Brevo, Resend, o da empresa...):',
+          {
+            list: [
+              'Servidor e porta: por exemplo, smtp.gmail.com e 587.',
+              'Conexão TLS direta: ligada para a porta 465; desligada para a 587.',
+              'Usuário e senha: a conta que envia. No Gmail e no Outlook, use uma senha de app.',
+              'Remetente: como aparece para quem recebe, por exemplo Nexa Flow <no-reply@empresa.com.br>. Muitos provedores exigem o mesmo e-mail do usuário.',
+            ],
+          },
+          'Depois de salvar, use "Enviar e-mail de teste". Se o servidor recusar, a mensagem de erro dele aparece na tela. A senha fica criptografada e nunca é exibida de novo: para mantê-la ao editar, deixe o campo em branco.',
+          {
+            tip: 'Sem servidor configurado, o sistema funciona normalmente, mas nenhum e-mail é enviado (nem notificações, nem redefinição de senha).',
+          },
         ],
       },
     ],

@@ -7,8 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { http, type HttpInit } from '@/shared/api/http'
 
-// Shapes of /users, /departments and /teams. They move to the orval client
-// generated from the OpenAPI document when it lands.
+// Shapes of /users, /departments, /teams and /settings/mail.
 
 export type GlobalRole = 'ADMIN' | 'USER'
 
@@ -180,4 +179,68 @@ export function useSetTeamMembers() {
       http<Team>(`/teams/${id}/members`, json('PUT', { userIds })),
     [adminKeys.teams],
   )
+}
+
+// SMTP server (/settings/mail). The password is write-only: the API only says
+// whether one is stored.
+export type MailSource = 'settings' | 'env' | 'none'
+
+export type MailSettingsView = {
+  source: MailSource
+  settings: {
+    host: string
+    port: number
+    secure: boolean
+    username: string | null
+    hasPassword: boolean
+    fromAddress: string
+    updatedAt: string
+  } | null
+  env: {
+    host: string
+    port: number
+    secure: boolean
+    username: string | null
+    fromAddress: string
+  } | null
+}
+
+export type MailSettingsInput = {
+  host: string
+  port: number
+  secure: boolean
+  username: string | null
+  // Omitted keeps the stored password; null removes it.
+  password?: string | null
+  fromAddress: string
+}
+
+const mailKey = ['settings', 'mail'] as const
+
+export function useMailSettings() {
+  return useQuery({ queryKey: mailKey, queryFn: () => http<MailSettingsView>('/settings/mail') })
+}
+
+export function useSaveMailSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: MailSettingsInput) =>
+      http<MailSettingsView>('/settings/mail', json('PUT', input)),
+    onSuccess: (view) => queryClient.setQueryData(mailKey, view),
+  })
+}
+
+export function useRemoveMailSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => http<MailSettingsView>('/settings/mail', { method: 'DELETE' }),
+    onSuccess: (view) => queryClient.setQueryData(mailKey, view),
+  })
+}
+
+export function useTestMail() {
+  return useMutation({
+    mutationFn: (to: string | undefined) =>
+      http<{ to: string }>('/settings/mail/test', json('POST', to ? { to } : {})),
+  })
 }

@@ -65,6 +65,8 @@ export const actionLabels: Record<string, string> = {
   'test_case.created': 'Caso de teste criado',
   'test_case.updated': 'Caso de teste alterado',
   'test_case.archived': 'Caso de teste arquivado',
+  'settings.mail_updated': 'Configuração de e-mail (SMTP) alterada',
+  'settings.mail_removed': 'Configuração de e-mail (SMTP) removida',
 }
 
 // A code without a label still reads as Portuguese: the entity it is about.
@@ -83,6 +85,7 @@ const entityLabels: Record<string, string> = {
   time: 'Tempo',
   sprint: 'Sprint',
   test_case: 'Caso de teste',
+  settings: 'Configurações',
 }
 
 export function actionLabel(action: string): string {
@@ -156,6 +159,12 @@ const fieldLabels: Record<string, string> = {
   completed: 'concluídos',
   unfinished: 'não concluídos',
   carriedOver: 'passaram adiante',
+  host: 'servidor',
+  port: 'porta',
+  secure: 'TLS direto',
+  username: 'usuário',
+  fromAddress: 'remetente',
+  password: 'senha',
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/i
@@ -204,6 +213,9 @@ const valueLabels: Record<string, string> = {
   ORIGIN: 'Origem',
   TARGET: 'Destino',
   INVOLVED: 'Envolvido',
+  changed: 'alterada',
+  unchanged: 'mantida',
+  removed: 'removida',
 }
 
 const hours = (seconds: number) => {

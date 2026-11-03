@@ -122,6 +122,12 @@ export const router = createBrowserRouter([
               Component: (await import('@/features/admin/tags-page')).TagsPage,
             }),
           },
+          {
+            path: 'email',
+            lazy: async () => ({
+              Component: (await import('@/features/admin/mail-settings-page')).MailSettingsPage,
+            }),
+          },
         ],
       },
       {

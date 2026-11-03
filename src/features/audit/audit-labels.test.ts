@@ -57,6 +57,8 @@ const API_ACTIONS = [
   'test_case.updated',
   'time.auto_stopped',
   'time.deleted',
+  'settings.mail_removed',
+  'settings.mail_updated',
   'time.logged',
   'time.updated',
   'user.activated',

@@ -6,6 +6,7 @@ const titles: Record<string, string> = {
   departments: 'Departamentos',
   teams: 'Times',
   tags: 'Tags globais',
+  email: 'E-mail (SMTP)',
   audit: 'Auditoria',
 }
 

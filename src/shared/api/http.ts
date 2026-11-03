@@ -28,9 +28,9 @@ function send(path: string, init: HttpInit) {
   return apiClient.request({ url: path, method: init.method ?? 'GET', data: init.body, headers })
 }
 
-// Thin wrapper over axios until the OpenAPI client (orval) is generated from
-// the API. An expired access token is renewed once and the request retried.
-// Network failures reject with axios' own error (see apiErrorMessage).
+// Thin wrapper over axios. An expired access token is renewed once and the
+// request retried. Network failures reject with axios' own error (see
+// apiErrorMessage).
 export async function http<T>(path: string, init: HttpInit = {}): Promise<T> {
   let response = await send(path, init)
   if (response.status === 401 && !path.startsWith('/auth/') && (await refreshSession())) {

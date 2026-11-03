@@ -16,6 +16,7 @@ import {
   IconHistory,
   IconLayoutKanban,
   IconLogout,
+  IconMail,
   IconSchool,
   IconTags,
   IconTestPipe,
@@ -50,6 +51,7 @@ const ADMIN: NavSection = {
     { to: '/admin/departments', label: 'Departamentos', icon: IconBuilding },
     { to: '/admin/teams', label: 'Times', icon: IconUsersGroup },
     { to: '/admin/tags', label: 'Tags', icon: IconTags },
+    { to: '/admin/email', label: 'E-mail (SMTP)', icon: IconMail },
     { to: '/admin/audit', label: 'Auditoria', icon: IconHistory },
   ],
 }

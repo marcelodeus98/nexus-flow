@@ -37,7 +37,23 @@ export type BoardColumn = {
   rank: string
   category: ColumnCategory
   wipLimit: number | null
+  color: string | null
 }
+
+// A column without its own color shows its category's, so every board has
+// colors from the start.
+export const categoryColors: Record<ColumnCategory, string> = {
+  BACKLOG: '#868E96',
+  TODO: '#1C7ED6',
+  IN_PROGRESS: '#F59F00',
+  REVIEW: '#7048E8',
+  TESTING: '#0C8599',
+  DONE: '#2F9E44',
+  BLOCKED: '#E03131',
+}
+
+export const columnColor = (column: Pick<BoardColumn, 'color' | 'category'>) =>
+  column.color ?? categoryColors[column.category]
 
 export type CardSummary = {
   id: string
@@ -63,6 +79,9 @@ export type CardSummary = {
   departments: { departmentId: string; role: CardDepartmentRole }[]
   checklistTotal: number
   checklistDone: number
+  // Subtasks (cards whose parent is this one) and how many are done.
+  subtasksTotal: number
+  subtasksDone: number
 }
 
 export type BoardInfo = { id: string; name: string; isDefault: boolean }
@@ -231,8 +250,12 @@ export function useDeleteBoard(projectId: string) {
 export function useCreateCard(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { title: string; columnId: string; type?: 'TASK' | 'BUG' }) =>
-      http<CardSummary>(`/projects/${projectId}/cards`, json('POST', input)),
+    mutationFn: (input: {
+      title: string
+      columnId: string
+      type?: 'TASK' | 'BUG'
+      parentId?: string
+    }) => http<CardSummary>(`/projects/${projectId}/cards`, json('POST', input)),
     onSuccess: (card) => upsertCard(queryClient, projectId, card),
   })
 }

@@ -1,0 +1,110 @@
+/* List view */
+.list-view__toolbar {
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.list-view__group td {
+  background: var(--nexa-surface);
+}
+
+.list-view__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.list-view__row {
+  cursor: pointer;
+}
+
+.list-view__row:focus-visible {
+  outline: 2px solid var(--nexa-teal-700);
+  outline-offset: -2px;
+}
+
+.list-view .board-card__avatar:first-child {
+  margin-left: 0;
+}
+
+/* Calendar view */
+.calendar-view {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--nexa-border);
+  border-left: 1px solid var(--nexa-border);
+}
+
+.calendar-view__weekday {
+  padding: 0.375rem 0.5rem;
+  border-right: 1px solid var(--nexa-border);
+  border-bottom: 1px solid var(--nexa-border);
+  background: var(--nexa-surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--nexa-slate);
+}
+
+.calendar-view__day,
+.calendar-view__blank {
+  min-height: 7rem;
+  padding: 0.375rem;
+  border-right: 1px solid var(--nexa-border);
+  border-bottom: 1px solid var(--nexa-border);
+}
+
+.calendar-view__day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  background: #ffffff;
+}
+
+.calendar-view__blank {
+  background: var(--nexa-surface);
+}
+
+.calendar-view__day--today {
+  box-shadow: inset 0 0 0 2px var(--nexa-teal);
+}
+
+.calendar-view__number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--nexa-slate);
+}
+
+.calendar-view__card {
+  display: block;
+  overflow: hidden;
+  padding: 0.125rem 0.375rem;
+  border-left: 3px solid var(--nexa-slate-400);
+  border-radius: 0.25rem;
+  background: var(--nexa-surface);
+  font-size: 0.75rem;
+  color: var(--nexa-navy);
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.calendar-view__card:hover {
+  background: var(--nexa-teal-50);
+}
+
+.calendar-view__card--late {
+  color: var(--mantine-color-red-8);
+  background: rgba(224, 49, 49, 0.08);
+}
+
+@media (max-width: 48em) {
+  .calendar-view__day,
+  .calendar-view__blank {
+    min-height: 4.5rem;
+  }
+
+  .calendar-view__card {
+    font-size: 0.6875rem;
+  }
+}

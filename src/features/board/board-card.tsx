@@ -1,6 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { IconBug, IconCalendar, IconListCheck, IconRotate } from '@tabler/icons-react'
+import {
+  IconBug,
+  IconCalendar,
+  IconCornerDownRight,
+  IconListCheck,
+  IconRotate,
+  IconSubtask,
+} from '@tabler/icons-react'
 import { severityLabels } from '@/features/qa/bug-severity'
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -14,6 +21,8 @@ export type CardLookups = {
   estimateView: EstimateView
   tagsById: Map<string, Tag>
   membersById: Map<string, { name: string }>
+  // Card numbers on this board, to show a subtask's parent.
+  numbersById: Map<string, number>
   // YYYY-MM-DD, fixed when the board renders, for "overdue".
   today: string
 }
@@ -51,6 +60,12 @@ export function CardFace({ card, lookups }: { card: CardSummary; lookups: CardLo
           )}
         </span>
       </div>
+      {card.parentId && lookups.numbersById.has(card.parentId) && (
+        <span className="board-card__parent">
+          <IconCornerDownRight size={12} aria-hidden />
+          subtarefa de {lookups.projectKey}-{lookups.numbersById.get(card.parentId)}
+        </span>
+      )}
       <p className="board-card__title">{card.title}</p>
       {tags.length > 0 && (
         <div className="board-card__tags">
@@ -74,6 +89,17 @@ export function CardFace({ card, lookups }: { card: CardSummary; lookups: CardLo
           >
             <IconRotate size={12} aria-hidden />
             {card.rejectionCount}
+          </span>
+        )}
+        {card.subtasksTotal > 0 && (
+          <span
+            className={`board-card__meta-item${
+              card.subtasksDone === card.subtasksTotal ? ' board-card__meta-item--done' : ''
+            }`}
+            title="Subtarefas concluídas"
+          >
+            <IconSubtask size={12} aria-hidden />
+            {card.subtasksDone}/{card.subtasksTotal}
           </span>
         )}
         {card.checklistTotal > 0 && (

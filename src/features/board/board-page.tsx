@@ -15,7 +15,7 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { Group, Select, Stack, Text } from '@mantine/core'
+import { Group, SegmentedControl, Select, Stack, Text } from '@mantine/core'
 import { toast } from '@/shared/notify/toast'
 import { useCan, useProjectMembers } from '@/features/projects/api'
 import { useCurrentProject } from '@/features/projects/project-context'
@@ -27,8 +27,10 @@ import { CardFace, type CardLookups } from './board-card'
 import { moveErrorMessage } from './move-errors'
 import { matchesFilter, useBoardFilter } from './board-filter'
 import { BoardFilters } from './board-filters'
-import { isoDay } from './card-format'
 import { BoardColumn } from './board-column'
+import { CalendarView } from './calendar-view'
+import { ListView } from './list-view'
+import { useBoardView, type BoardView } from './use-board-view'
 
 type Placement = Record<string, string[]>
 
@@ -43,6 +45,7 @@ const collisionDetection: CollisionDetection = (args) => {
 export function BoardPage() {
   const project = useCurrentProject()
   const navigate = useNavigate()
+  const [view, setView] = useBoardView(project.key)
   // /p/KEY/b/:boardId, or the default board on /p/KEY.
   const boardId = useParams().boardId ?? project.defaultBoardId
   const boards = useBoards(project.id)
@@ -70,19 +73,36 @@ export function BoardPage() {
 
   // Fixed for the life of the page; a board open overnight shows yesterday's
   // "overdue" until it is reloaded.
-  const [today] = useState(() => isoDay(new Date()))
+  // The user's local day (not UTC: in the evening UTC is already tomorrow).
+  const [today] = useState(() => new Date().toLocaleDateString('en-CA'))
   const { filter, active: filtering } = useBoardFilter()
   const session = useSessionState()
   const userId = session.status === 'authenticated' ? session.session.user.id : ''
+  // Changes only when cards come or go (not on every move or edit), so the
+  // memoised cards do not all repaint on each event.
+  const numbersKey = (board.data?.cards ?? []).map((card) => `${card.id}:${card.number}`).join()
+  const numbersById = useMemo(
+    () =>
+      new Map(
+        numbersKey
+          ? numbersKey.split(',').map((pair) => {
+              const [id, number] = pair.split(':')
+              return [id, Number(number)] as const
+            })
+          : [],
+      ),
+    [numbersKey],
+  )
   const lookups = useMemo<CardLookups>(
     () => ({
       projectKey: project.key,
       estimateView: project.defaultEstimateView,
       tagsById: new Map((tags.data ?? []).map((tag) => [tag.id, tag])),
       membersById: new Map((members.data?.members ?? []).map((m) => [m.user.id, m.user])),
+      numbersById,
       today,
     }),
-    [project.key, project.defaultEstimateView, tags.data, members.data, today],
+    [project.key, project.defaultEstimateView, tags.data, members.data, numbersById, today],
   )
 
   const cardsById = useMemo(
@@ -188,107 +208,128 @@ export function BoardPage() {
   return (
     <>
       <Stack gap="sm" mb="sm">
-        {(boardList.length > 1 || usesSprints) && (
-          <Group gap="md">
-            {boardList.length > 1 && (
-              <Select
-                size="xs"
-                w={220}
-                aria-label="Board"
-                value={board.data.board.id}
-                onChange={(id) =>
-                  id &&
-                  navigate(
-                    boardList.find((b) => b.id === id)?.isDefault
-                      ? `/p/${project.key}`
-                      : `/p/${project.key}/b/${id}`,
-                  )
-                }
-                allowDeselect={false}
-                data={boardList.map((b) => ({
-                  value: b.id,
-                  label: b.isDefault ? `${b.name} (padrão)` : b.name,
-                }))}
-              />
-            )}
-            {usesSprints && (
-              <Select
-                size="xs"
-                w={180}
-                aria-label="Cards exibidos"
-                value={scope}
-                onChange={(value) => value && setScope(value as 'sprint' | 'all')}
-                allowDeselect={false}
-                data={[
-                  { value: 'sprint', label: 'Sprint ativa' },
-                  { value: 'all', label: 'Todos os cards' },
-                ]}
-              />
-            )}
-            {usesSprints &&
-              scope === 'sprint' &&
-              (activeSprint ? (
-                <Text size="sm" c="dimmed">
-                  {activeSprint.name} · {formatDay(activeSprint.startDate)} a{' '}
-                  {formatDay(activeSprint.endDate)}
-                  {activeSprint.goal && ` · ${activeSprint.goal}`}
-                </Text>
-              ) : (
-                <Text size="sm" c="dimmed">
-                  Nenhuma sprint em andamento.{' '}
-                  <Link to={`/p/${project.key}/backlog`} className="text-link">
-                    Planeje no backlog
-                  </Link>
-                  .
-                </Text>
-              ))}
-          </Group>
-        )}
+        <Group gap="md">
+          <SegmentedControl
+            size="xs"
+            aria-label="Visão"
+            value={view}
+            onChange={(value) => setView(value as BoardView)}
+            data={[
+              { value: 'board', label: 'Quadro' },
+              { value: 'list', label: 'Lista' },
+              { value: 'calendar', label: 'Calendário' },
+            ]}
+          />
+          {boardList.length > 1 && (
+            <Select
+              size="xs"
+              w={220}
+              aria-label="Board"
+              value={board.data.board.id}
+              onChange={(id) =>
+                id &&
+                navigate(
+                  boardList.find((b) => b.id === id)?.isDefault
+                    ? `/p/${project.key}`
+                    : `/p/${project.key}/b/${id}`,
+                )
+              }
+              allowDeselect={false}
+              data={boardList.map((b) => ({
+                value: b.id,
+                label: b.isDefault ? `${b.name} (padrão)` : b.name,
+              }))}
+            />
+          )}
+          {usesSprints && (
+            <Select
+              size="xs"
+              w={180}
+              aria-label="Cards exibidos"
+              value={scope}
+              onChange={(value) => value && setScope(value as 'sprint' | 'all')}
+              allowDeselect={false}
+              data={[
+                { value: 'sprint', label: 'Sprint ativa' },
+                { value: 'all', label: 'Todos os cards' },
+              ]}
+            />
+          )}
+          {usesSprints &&
+            scope === 'sprint' &&
+            (activeSprint ? (
+              <Text size="sm" c="dimmed">
+                {activeSprint.name} · {formatDay(activeSprint.startDate)} a{' '}
+                {formatDay(activeSprint.endDate)}
+                {activeSprint.goal && ` · ${activeSprint.goal}`}
+              </Text>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Nenhuma sprint em andamento.{' '}
+                <Link to={`/p/${project.key}/backlog`} className="text-link">
+                  Planeje no backlog
+                </Link>
+                .
+              </Text>
+            ))}
+        </Group>
         <BoardFilters members={members.data?.members ?? []} tags={tags.data ?? []} />
         {/* Phones show one column at a time. */}
-        <Select
-          hiddenFrom="sm"
-          aria-label="Coluna"
-          value={visibleMobileColumn ?? null}
-          onChange={(id) => id && setMobileColumnId(id)}
-          allowDeselect={false}
-          data={columns.map((column) => ({
-            value: column.id,
-            label: `${column.name} (${placement[column.id].length})`,
-          }))}
-        />
+        {view === 'board' && (
+          <Select
+            hiddenFrom="sm"
+            aria-label="Coluna"
+            value={visibleMobileColumn ?? null}
+            onChange={(id) => id && setMobileColumnId(id)}
+            allowDeselect={false}
+            data={columns.map((column) => ({
+              value: column.id,
+              label: `${column.name} (${placement[column.id].length})`,
+            }))}
+          />
+        )}
       </Stack>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={collisionDetection}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragEnd={onDragEnd}
-        onDragCancel={() => setDragging(null)}
-      >
-        <div className="board">
-          {columns.map((column) => (
-            <BoardColumn
-              key={column.id}
-              projectId={project.id}
-              column={column}
-              cards={cardsIn(column.id)}
-              lookups={lookups}
-              canCreate={!readOnly && can('card:create')}
-              canMove={!readOnly && can('card:move')}
-              className={column.id === visibleMobileColumn ? '' : 'board-column--mobile-hidden'}
-            />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeCard && (
-            <div className="board-card__overlay">
-              <CardFace card={activeCard} lookups={lookups} />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+      {view === 'list' && <ListView columns={columns} cardsIn={cardsIn} lookups={lookups} />}
+      {view === 'calendar' && (
+        <CalendarView
+          columns={columns}
+          cards={columns.flatMap((column) => cardsIn(column.id))}
+          lookups={lookups}
+        />
+      )}
+      {view === 'board' && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collisionDetection}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragEnd={onDragEnd}
+          onDragCancel={() => setDragging(null)}
+        >
+          <div className="board">
+            {columns.map((column) => (
+              <BoardColumn
+                key={column.id}
+                projectId={project.id}
+                column={column}
+                cards={cardsIn(column.id)}
+                lookups={lookups}
+                canCreate={!readOnly && can('card:create')}
+                canMove={!readOnly && can('card:move')}
+                className={column.id === visibleMobileColumn ? '' : 'board-column--mobile-hidden'}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeCard && (
+              <div className="board-card__overlay">
+                <CardFace card={activeCard} lookups={lookups} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       {/* The card drawer (/p/:key/c/:number) opens over the board. */}
       <Outlet context={project} />

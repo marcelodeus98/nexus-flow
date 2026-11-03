@@ -7,6 +7,7 @@ import {
   Menu,
   MultiSelect,
   NumberInput,
+  ScrollArea,
   Select,
   Stack,
   Text,
@@ -18,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useDepartments } from '@/features/admin/api'
+import { describeActivity } from '@/features/audit/audit-labels'
 import {
   boardKeys,
   priorityLabels,
@@ -43,12 +45,12 @@ import {
   useDeleteCard,
   useSetWatching,
   useUpdateCard,
-  type ActivityEntry,
   type CardDetail,
   type CardPatch,
 } from './api'
 import { DescriptionEditor } from './description-editor'
 import { Section } from './sections/section'
+import { SubtasksSection } from './sections/subtasks-section'
 import { AttachmentsSection } from './sections/attachments-section'
 import { ChecklistSection } from './sections/checklist-section'
 import { CommentsSection } from './sections/comments-section'
@@ -162,6 +164,7 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
         toast.error(
           apiErrorMessage(error, {
             412: 'Outra pessoa alterou este card. Carregamos a versão atual; refaça a alteração.',
+            400: 'Não deu para salvar. Um card não pode ser pai de um card acima dele (ex.: da própria subtarefa).',
           }),
         ),
     })
@@ -310,6 +313,27 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
             onChange={(value) => save({ departments: value })}
           />
         </Row>
+        <Row label="Card pai">
+          <Select
+            size="xs"
+            aria-label="Card pai"
+            placeholder="Nenhum (card principal)"
+            searchable
+            clearable
+            disabled={!editable}
+            value={card.parentId}
+            onChange={(parentId) => {
+              if (parentId !== card.parentId) save({ parentId })
+            }}
+            nothingFoundMessage="Nenhum card encontrado neste board"
+            data={(board.data?.cards ?? [])
+              .filter((other) => other.id !== card.id)
+              .map((other) => ({
+                value: other.id,
+                label: `${project.key}-${other.number} ${other.title}`,
+              }))}
+          />
+        </Row>
         {usesSprints && (
           <Row label="Sprint">
             <SprintField projectId={project.id} card={card} editable={canPlan} />
@@ -327,22 +351,13 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
         />
       </Section>
 
-      {card.children.length > 0 && (
-        <Section title="Subtarefas">
-          <Stack gap={4}>
-            {card.children.map((child) => (
-              <Text key={child.id} size="sm">
-                <Link to={`/p/${project.key}/c/${child.number}`} className="card-drawer__link">
-                  <Text span size="xs" c="dimmed" ff="monospace">
-                    {project.key}-{child.number}
-                  </Text>{' '}
-                  {child.title}
-                </Link>
-              </Text>
-            ))}
-          </Stack>
-        </Section>
-      )}
+      <SubtasksSection
+        projectId={project.id}
+        projectKey={project.key}
+        card={card}
+        columns={columns}
+        canCreate={!readOnly && can('card:create')}
+      />
 
       <BugSection projectId={project.id} projectKey={project.key} card={card} editable={editable} />
 
@@ -647,63 +662,42 @@ function DepartmentsField({
   )
 }
 
-const fieldLabels: Record<string, string> = {
-  title: 'título',
-  priority: 'prioridade',
-  storyPoints: 'story points',
-  estimateMinutes: 'estimativa',
-  dueDate: 'prazo',
-  parentId: 'card pai',
-  assigneeIds: 'responsáveis',
-  tagIds: 'tags',
-  departments: 'departamentos',
-}
-
-function describe(entry: ActivityEntry): string {
-  const meta = entry.metadata ?? {}
-  switch (entry.action) {
-    case 'card.created':
-      return 'criou o card'
-    case 'card.moved': {
-      const from = (meta.from as { name?: string } | undefined)?.name
-      const to = (meta.to as { name?: string } | undefined)?.name
-      return `moveu de ${from ?? '?'} para ${to ?? '?'}`
-    }
-    case 'card.updated': {
-      const fields = Object.keys(meta).map((field) => fieldLabels[field] ?? field)
-      return fields.length ? `alterou ${fields.join(', ')}` : 'editou o card'
-    }
-    case 'card.deleted':
-      return 'excluiu o card'
-    default:
-      return entry.action
-  }
-}
-
 function Activity({ cardId }: { cardId: string }) {
   const activity = useCardActivity(cardId)
   return (
-    <Section title="Histórico">
-      <Stack gap={6} component="ol" className="card-drawer__activity">
-        {activity.data?.map((entry) => (
-          <Group key={entry.id} component="li" gap="xs" wrap="nowrap" align="flex-start">
-            <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
-              {new Date(entry.createdAt).toLocaleString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-            <Text size="sm">
-              <Text span fw={600}>
-                {entry.actor?.name ?? 'Sistema'}
-              </Text>{' '}
-              {describe(entry)}
-            </Text>
-          </Group>
-        ))}
-      </Stack>
+    <Section
+      title="Histórico"
+      aside={
+        activity.data && activity.data.length > 0 ? (
+          <Text size="sm" c="dimmed">
+            {activity.data.length} {activity.data.length === 1 ? 'registro' : 'registros'}
+          </Text>
+        ) : undefined
+      }
+    >
+      {/* Long histories scroll inside the section instead of stretching the drawer. */}
+      <ScrollArea.Autosize mah={280} type="auto" offsetScrollbars className="card-drawer__scroll">
+        <Stack gap={6} component="ol" className="card-drawer__activity">
+          {activity.data?.map((entry) => (
+            <Group key={entry.id} component="li" gap="xs" wrap="nowrap" align="flex-start">
+              <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
+                {new Date(entry.createdAt).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+              <Text size="sm">
+                <Text span fw={600}>
+                  {entry.actor?.name ?? 'Sistema'}
+                </Text>{' '}
+                {describeActivity(entry.action, entry.metadata)}
+              </Text>
+            </Group>
+          ))}
+        </Stack>
+      </ScrollArea.Autosize>
     </Section>
   )
 }

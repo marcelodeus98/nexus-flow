@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useProjectRealtime } from '@/features/board/use-project-realtime'
 import { ApiError } from '@/shared/api/http'
 import { apiErrorMessage } from '@/shared/api/errors'
+import { HelpLink } from '@/features/help/help-link'
 import { useCan, useProject } from './api'
 
 // Shell of /p/:projectKey: header, tabs and the realtime subscription shared
@@ -70,6 +71,18 @@ export function ProjectLayout() {
   ]
 
   const visibleTabs = tabs.filter((tab) => tab.show)
+  // The help topic about the open tab.
+  const helpTopic = onBacklog
+    ? 'backlog-sprints'
+    : onTests
+      ? 'qa'
+      : onReports
+        ? 'relatorios'
+        : onSettings
+          ? 'boards'
+          : project.data.methodology === 'KANBAN'
+            ? 'boards'
+            : 'metodologias'
   const activeTab = visibleTabs.find((tab) => tab.active)?.to ?? null
 
   return (
@@ -99,6 +112,9 @@ export function ProjectLayout() {
               {tab.label}
             </Tabs.Tab>
           ))}
+          <Group ml="auto" px="xs">
+            <HelpLink topic={helpTopic} />
+          </Group>
         </Tabs.List>
       </Tabs>
       <Outlet context={project.data} />

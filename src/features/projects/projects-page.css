@@ -14,3 +14,10 @@
 .projects-page__empty {
   border-style: dashed;
 }
+
+.columns-settings__swatch {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+}

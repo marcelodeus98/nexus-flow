@@ -26,6 +26,7 @@ import {
   type GroupBy,
 } from './api'
 import { HoursBars } from './hours-bars'
+import { QualitySection } from './quality-section'
 
 const groupLabels: Record<GroupBy, string> = {
   user: 'Pessoa',
@@ -49,6 +50,7 @@ export function ProjectReportsPage() {
   const to = params.get('to') ?? today
   const groupBy = (params.get('groupBy') as GroupBy | null) ?? 'user'
   const sprintId = params.get('sprint') ?? undefined
+  const view = params.get('view') === 'quality' ? 'quality' : 'hours'
   const set = (name: string, value: string | undefined) =>
     setParams(
       () => {
@@ -65,7 +67,10 @@ export function ProjectReportsPage() {
   const requestExport = useRequestExport(project.id)
   const [lastExport, setLastExport] = useState<string>()
 
-  function exportFile(kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL', format: 'CSV' | 'XLSX') {
+  function exportFile(
+    kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL' | 'QUALITY',
+    format: 'CSV' | 'XLSX',
+  ) {
     requestExport.mutate(
       { kind, format, from, to, sprintId },
       {
@@ -127,9 +132,25 @@ export function ProjectReportsPage() {
               ]}
             />
           )}
+          <SegmentedControl
+            size="xs"
+            aria-label="Relatório"
+            value={view}
+            onChange={(value) => set('view', value === 'quality' ? 'quality' : undefined)}
+            data={[
+              { value: 'hours', label: 'Horas' },
+              { value: 'quality', label: 'Qualidade' },
+            ]}
+          />
           <Group gap="xs" ml="auto">
-            {exportButton('Excel', () => exportFile('TIME_ENTRIES', 'XLSX'))}
-            {exportButton('CSV', () => exportFile('TIME_ENTRIES', 'CSV'))}
+            {view === 'quality' ? (
+              exportButton('Excel', () => exportFile('QUALITY', 'XLSX'))
+            ) : (
+              <>
+                {exportButton('Excel', () => exportFile('TIME_ENTRIES', 'XLSX'))}
+                {exportButton('CSV', () => exportFile('TIME_ENTRIES', 'CSV'))}
+              </>
+            )}
           </Group>
         </Group>
       </Paper>
@@ -143,110 +164,118 @@ export function ProjectReportsPage() {
         </Text>
       )}
 
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" gap="sm">
-            <div>
-              <Title order={4}>Horas registradas</Title>
-              <Text size="sm" c="dimmed">
-                {time.data
-                  ? `${formatHours(time.data.totalSeconds)} no período${
-                      time.data.filter.onlyOwn ? ' (somente as suas)' : ''
-                    }`
-                  : 'Carregando…'}
-              </Text>
-            </div>
-            <SegmentedControl
-              size="xs"
-              aria-label="Agrupar por"
-              value={groupBy}
-              onChange={(value) => set('groupBy', value)}
-              data={(Object.keys(groupLabels) as GroupBy[]).map((value) => ({
-                value,
-                label: groupLabels[value],
-              }))}
-            />
-          </Group>
-          {time.isError && (
-            <Text size="sm" c="red">
-              {apiErrorMessage(time.error)}
-            </Text>
-          )}
-          {time.data && <HoursBars report={time.data} />}
-        </Stack>
-      </Paper>
-
-      {seesEveryone && (
-        <Stack gap="sm">
-          <Group justify="space-between" gap="sm">
-            <div>
-              <Title order={4}>Estimado vs real</Title>
-              {estimate.data && (
-                <Text size="sm" c="dimmed">
-                  {formatHours(estimate.data.totals.estimateMinutes * 60)} estimadas,{' '}
-                  {formatHours(estimate.data.totals.actualMinutesOnEstimated * 60)} gastas nesses
-                  cards. Os maiores estouros aparecem primeiro.
+      {view === 'quality' ? (
+        <QualitySection projectId={project.id} filter={{ from, to, sprintId }} />
+      ) : (
+        <>
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
+              <Group justify="space-between" gap="sm">
+                <div>
+                  <Title order={4}>Horas registradas</Title>
+                  <Text size="sm" c="dimmed">
+                    {time.data
+                      ? `${formatHours(time.data.totalSeconds)} no período${
+                          time.data.filter.onlyOwn ? ' (somente as suas)' : ''
+                        }`
+                      : 'Carregando…'}
+                  </Text>
+                </div>
+                <SegmentedControl
+                  size="xs"
+                  aria-label="Agrupar por"
+                  value={groupBy}
+                  onChange={(value) => set('groupBy', value)}
+                  data={(Object.keys(groupLabels) as GroupBy[]).map((value) => ({
+                    value,
+                    label: groupLabels[value],
+                  }))}
+                />
+              </Group>
+              {time.isError && (
+                <Text size="sm" c="red">
+                  {apiErrorMessage(time.error)}
                 </Text>
               )}
-            </div>
-            {exportButton('Excel', () => exportFile('ESTIMATE_VS_ACTUAL', 'XLSX'))}
-          </Group>
-          <Paper withBorder radius="md">
-            <Table verticalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Card</Table.Th>
-                  <Table.Th>Coluna</Table.Th>
-                  <Table.Th ta="right">Estimado</Table.Th>
-                  <Table.Th ta="right">Real</Table.Th>
-                  <Table.Th ta="right">Desvio</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {estimate.data?.rows.map((row) => (
-                  <Table.Tr key={row.cardId}>
-                    <Table.Td maw={320}>
-                      <Text size="sm" truncate>
-                        <Link
-                          to={`/p/${project.key}/c/${row.number}`}
-                          className="card-drawer__link"
-                        >
-                          <Text span size="xs" c="dimmed" ff="monospace">
-                            {project.key}-{row.number}
-                          </Text>{' '}
-                          {row.title}
-                        </Link>
-                      </Text>
-                    </Table.Td>
-                    <Table.Td c="dimmed">{row.column}</Table.Td>
-                    <Table.Td ta="right">
-                      {row.estimateMinutes === null ? '—' : formatHours(row.estimateMinutes * 60)}
-                    </Table.Td>
-                    <Table.Td ta="right">{formatHours(row.actualMinutes * 60)}</Table.Td>
-                    <Table.Td
-                      ta="right"
-                      c={(row.deviationPct ?? 0) > 20 ? 'red' : undefined}
-                      fw={(row.deviationPct ?? 0) > 20 ? 600 : undefined}
-                    >
-                      {row.deviationPct === null
-                        ? '—'
-                        : `${row.deviationPct > 0 ? '+' : ''}${row.deviationPct}%`}
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-                {estimate.data?.rows.length === 0 && (
-                  <Table.Tr>
-                    <Table.Td colSpan={5}>
-                      <Text size="sm" c="dimmed" ta="center" py="md">
-                        Nenhum card com estimativa em horas ou tempo registrado.
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-              </Table.Tbody>
-            </Table>
+              {time.data && <HoursBars report={time.data} />}
+            </Stack>
           </Paper>
-        </Stack>
+
+          {seesEveryone && (
+            <Stack gap="sm">
+              <Group justify="space-between" gap="sm">
+                <div>
+                  <Title order={4}>Estimado vs real</Title>
+                  {estimate.data && (
+                    <Text size="sm" c="dimmed">
+                      {formatHours(estimate.data.totals.estimateMinutes * 60)} estimadas,{' '}
+                      {formatHours(estimate.data.totals.actualMinutesOnEstimated * 60)} gastas
+                      nesses cards. Os maiores estouros aparecem primeiro.
+                    </Text>
+                  )}
+                </div>
+                {exportButton('Excel', () => exportFile('ESTIMATE_VS_ACTUAL', 'XLSX'))}
+              </Group>
+              <Paper withBorder radius="md">
+                <Table verticalSpacing="xs">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Card</Table.Th>
+                      <Table.Th>Coluna</Table.Th>
+                      <Table.Th ta="right">Estimado</Table.Th>
+                      <Table.Th ta="right">Real</Table.Th>
+                      <Table.Th ta="right">Desvio</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {estimate.data?.rows.map((row) => (
+                      <Table.Tr key={row.cardId}>
+                        <Table.Td maw={320}>
+                          <Text size="sm" truncate>
+                            <Link
+                              to={`/p/${project.key}/c/${row.number}`}
+                              className="card-drawer__link"
+                            >
+                              <Text span size="xs" c="dimmed" ff="monospace">
+                                {project.key}-{row.number}
+                              </Text>{' '}
+                              {row.title}
+                            </Link>
+                          </Text>
+                        </Table.Td>
+                        <Table.Td c="dimmed">{row.column}</Table.Td>
+                        <Table.Td ta="right">
+                          {row.estimateMinutes === null
+                            ? '—'
+                            : formatHours(row.estimateMinutes * 60)}
+                        </Table.Td>
+                        <Table.Td ta="right">{formatHours(row.actualMinutes * 60)}</Table.Td>
+                        <Table.Td
+                          ta="right"
+                          c={(row.deviationPct ?? 0) > 20 ? 'red' : undefined}
+                          fw={(row.deviationPct ?? 0) > 20 ? 600 : undefined}
+                        >
+                          {row.deviationPct === null
+                            ? '—'
+                            : `${row.deviationPct > 0 ? '+' : ''}${row.deviationPct}%`}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                    {estimate.data?.rows.length === 0 && (
+                      <Table.Tr>
+                        <Table.Td colSpan={5}>
+                          <Text size="sm" c="dimmed" ta="center" py="md">
+                            Nenhum card com estimativa em horas ou tempo registrado.
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                  </Table.Tbody>
+                </Table>
+              </Paper>
+            </Stack>
+          )}
+        </>
       )}
     </Stack>
   )

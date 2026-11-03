@@ -291,3 +291,25 @@
   background: var(--nexa-surface);
   color: var(--nexa-slate);
 }
+
+/* Each column's color: a band on top and a dot by the name. */
+.board-column {
+  border-top: 3px solid var(--column-color, transparent);
+}
+
+.board-column__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--column-color);
+}
+
+.board-card__parent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: -0.25rem;
+  font-size: 0.75rem;
+  color: var(--nexa-slate);
+}

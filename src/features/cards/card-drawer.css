@@ -107,3 +107,9 @@
 .tests-section__row {
   flex-wrap: wrap;
 }
+
+.card-drawer__scroll {
+  border: 1px solid var(--nexa-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}

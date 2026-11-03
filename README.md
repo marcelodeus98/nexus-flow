@@ -56,9 +56,14 @@ A identidade visual é a mesma do Nexa Assets:
   - **Projeto:** aba **Casos de teste** com a biblioteca.
   - **Sidebar:** a **Fila de testes** mostra os cards em "Em teste".
   - **Board:** bugs com borda vermelha e severidade, e filtros por tipo e severidade.
+  - **Relatórios → Qualidade:** indicadores, gráfico semanal (`@mantine/charts`, com cores validadas para daltonismo) e tabelas por severidade e por sprint.
 - **Card:** o painel do card tem board (para mover a outro board), checklist (os itens de QA só são editáveis por QA, PO e gestor), timer e lançamentos de tempo, anexos (upload direto ao R2), comentários com menções (`@nome`) e histórico.
 - **Timer:** fica no header, sincronizado entre abas pelo socket. O tempo decorrido é sempre calculado a partir do `startedAt` do servidor.
 - **Burndown:** o gráfico é SVG próprio (`features/sprints/burndown-chart.tsx`), com tooltip, navegação por teclado e alternativa em tabela. As cores são os tokens `--series-1`, `--chart-reference` e `--chart-grid` de `src/index.css`.
+
+## Ajuda e treinamento
+
+O conteúdo da ajuda (`/help`) fica em `src/features/help/content.ts`. São perguntas e respostas por tema: primeiros passos, Kanban/Scrum/Híbrido, projetos e papéis, boards, cards, backlog e sprints, story points, tempo, QA, relatórios, notificações e administração, e o fluxo completo. Cada tela aponta para o seu tema com o componente `HelpLink` ("Como funciona?"). Quando uma funcionalidade mudar, atualize as respostas nesse arquivo.
 
 ## Sessão
 

@@ -16,7 +16,7 @@ export type CardDetail = CardSummary & {
   createdBy: { id: string; name: string } | null
   watcherIds: string[]
   parent: { id: string; number: number; title: string } | null
-  children: { id: string; number: number; title: string; columnId: string }[]
+  children: Subtask[]
   checklist: ChecklistItem[]
   // Set on bugs (type BUG).
   bug: BugDetails | null
@@ -38,6 +38,19 @@ export type BugDetails = {
   expected: string | null
   actual: string | null
   foundIn: { id: string; number: number; title: string } | null
+}
+
+export type Subtask = {
+  id: string
+  number: number
+  title: string
+  columnId: string
+  columnName: string
+  type: 'TASK' | 'BUG'
+  done: boolean
+  assigneeIds: string[]
+  subtasksTotal: number
+  subtasksDone: number
 }
 
 export type ChecklistItem = {

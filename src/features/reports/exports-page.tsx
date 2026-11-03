@@ -3,13 +3,19 @@ import { IconDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { toast } from '@/shared/notify/toast'
-import { downloadExport, useExports, type ExportStatus } from './api'
+import { downloadExport, useExports, type ExportItem, type ExportStatus } from './api'
 
 const statusLabels: Record<ExportStatus, string> = {
   PENDING: 'Na fila',
   RUNNING: 'Gerando',
   DONE: 'Pronta',
   FAILED: 'Falhou',
+}
+
+const kindLabels: Record<ExportItem['kind'], string> = {
+  TIME_ENTRIES: 'Horas registradas',
+  ESTIMATE_VS_ACTUAL: 'Estimado vs real',
+  QUALITY: 'Qualidade',
 }
 
 const statusColors: Record<ExportStatus, string> = {
@@ -50,8 +56,7 @@ export function ExportsPage() {
             >
               <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                 <Text size="sm" fw={500} truncate>
-                  {item.fileName ??
-                    (item.kind === 'TIME_ENTRIES' ? 'Horas registradas' : 'Estimado vs real')}
+                  {item.fileName ?? kindLabels[item.kind]}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {new Date(item.createdAt).toLocaleString('pt-BR')} · {item.format}

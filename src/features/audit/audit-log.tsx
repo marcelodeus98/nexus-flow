@@ -1,7 +1,8 @@
-import { Button, Code, Paper, Select, Stack, Table, Text } from '@mantine/core'
+import { Button, Paper, Select, Stack, Table, Text } from '@mantine/core'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
+import { actionLabel, describeMetadata } from './audit-labels'
 import { http } from '@/shared/api/http'
 
 type Entry = {
@@ -30,6 +31,7 @@ const actionGroups: Record<string, string> = {
   'department.': 'Departamentos',
   'team.': 'Times',
   'tag.': 'Tags',
+  'test_case.': 'Casos de teste',
 }
 
 const ALL = 'all'
@@ -99,16 +101,14 @@ export function AuditLog({ source }: { source: string }) {
                   )}
                 </Table.Td>
                 <Table.Td>
-                  <Text size="xs" ff="monospace">
-                    {entry.action}
+                  <Text size="sm" title={entry.action}>
+                    {actionLabel(entry.action)}
                   </Text>
                 </Table.Td>
                 <Table.Td maw={384}>
-                  <Code c="dimmed" style={{ wordBreak: 'break-all' }}>
-                    <Text span size="xs" lineClamp={2}>
-                      {entry.metadata ? JSON.stringify(entry.metadata) : '—'}
-                    </Text>
-                  </Code>
+                  <Text size="xs" c="dimmed" lineClamp={3}>
+                    {describeMetadata(entry.metadata) || '—'}
+                  </Text>
                 </Table.Td>
               </Table.Tr>
             ))}

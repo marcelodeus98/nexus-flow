@@ -25,6 +25,8 @@ const card = (overrides: Partial<CardSummary> = {}): CardSummary => ({
   departments: [],
   checklistTotal: 0,
   checklistDone: 0,
+  subtasksTotal: 0,
+  subtasksDone: 0,
   ...overrides,
 })
 

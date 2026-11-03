@@ -72,6 +72,12 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: 'help/:topicId?',
+        lazy: async () => ({
+          Component: (await import('@/features/help/help-page')).HelpPage,
+        }),
+      },
+      {
         path: 'qa',
         lazy: async () => ({
           Component: (await import('@/features/qa/qa-queue-page')).QaQueuePage,

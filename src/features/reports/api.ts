@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { BugSeverity } from '@/features/qa/bug-severity'
 import { http } from '@/shared/api/http'
 
 export type GroupBy = 'user' | 'card' | 'sprint' | 'day'
@@ -28,7 +29,7 @@ export type ExportStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED'
 
 export type ExportItem = {
   id: string
-  kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL'
+  kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL' | 'QUALITY'
   format: 'CSV' | 'XLSX'
   status: ExportStatus
   rowCount: number | null
@@ -41,6 +42,36 @@ export type ExportItem = {
 
 export type RangeFilter = { from: string; to: string; sprintId?: string }
 
+type BySeverity = Record<BugSeverity, number>
+
+// Aggregates for the project, a sprint or a period (never per person).
+export type QualityReport = {
+  reviews: { total: number; approved: number; rejected: number; rejectionRate: number | null }
+  firstPassYield: number | null
+  avgRework: number | null
+  timeInTesting: { passages: number; avgHours: number | null; medianHours: number | null }
+  bugs: {
+    created: number
+    createdBySeverity: BySeverity
+    open: number
+    openBySeverity: BySeverity
+    fixed: number
+    avgHoursToFix: number | null
+  }
+  tests: { passed: number; failed: number; blocked: number }
+  weeks: { week: string; approved: number; rejected: number; bugs: number }[]
+  sprints: {
+    id: string
+    name: string
+    status: 'PLANNED' | 'ACTIVE' | 'CLOSED'
+    startDate: string
+    endDate: string
+    approved: number
+    rejected: number
+    bugs: number
+  }[]
+}
+
 const query = (params: Record<string, string | undefined>) =>
   new URLSearchParams(
     Object.entries(params).filter((entry): entry is [string, string] => Boolean(entry[1])),
@@ -50,6 +81,14 @@ export function useTimeReport(projectId: string, filter: RangeFilter & { groupBy
   return useQuery({
     queryKey: ['reports', projectId, 'time', filter],
     queryFn: () => http<TimeReport>(`/projects/${projectId}/reports/time?${query(filter)}`),
+  })
+}
+
+export function useQualityReport(projectId: string, filter: RangeFilter, enabled: boolean) {
+  return useQuery({
+    queryKey: ['reports', projectId, 'quality', filter],
+    queryFn: () => http<QualityReport>(`/projects/${projectId}/reports/quality?${query(filter)}`),
+    enabled,
   })
 }
 

@@ -2,10 +2,10 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Button, Checkbox, Group, Stack, Textarea } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { toast } from '@/shared/notify/toast'
 import { apiErrorMessage } from '@/shared/api/errors'
-import { useCreateCard, type BoardColumn as Column, type CardSummary } from './api'
+import { columnColor, useCreateCard, type BoardColumn as Column, type CardSummary } from './api'
 import { SortableCard, type CardLookups } from './board-card'
 
 export function BoardColumn({
@@ -34,8 +34,10 @@ export function BoardColumn({
       ref={setNodeRef}
       aria-label={column.name}
       className={`board-column${isOver ? ' board-column--over' : ''} ${className}`}
+      style={{ '--column-color': columnColor(column) } as CSSProperties}
     >
       <header className="board-column__header">
+        <span className="board-column__dot" aria-hidden />
         <h2 className="board-column__name">{column.name}</h2>
         <span
           className={`board-column__count${overLimit ? ' board-column__count--over' : ''}`}

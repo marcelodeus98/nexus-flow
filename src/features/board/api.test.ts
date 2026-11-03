@@ -25,6 +25,8 @@ const card = (id: string, rank: string, version = 1, columnId = 'c1'): CardSumma
   departments: [],
   checklistTotal: 0,
   checklistDone: 0,
+  subtasksTotal: 0,
+  subtasksDone: 0,
 })
 
 const column = (id: string) => ({
@@ -33,6 +35,7 @@ const column = (id: string) => ({
   rank: 'a0',
   category: 'TODO' as const,
   wipLimit: null,
+  color: null,
 })
 
 function clientWith(cards: CardSummary[]) {

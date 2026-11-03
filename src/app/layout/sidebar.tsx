@@ -16,6 +16,7 @@ import {
   IconHistory,
   IconLayoutKanban,
   IconLogout,
+  IconSchool,
   IconTags,
   IconTestPipe,
   IconUserCog,
@@ -38,6 +39,7 @@ const MAIN: NavSection = {
     { to: '/qa', label: 'Fila de testes', icon: IconTestPipe },
     { to: '/exports', label: 'Exportações', icon: IconFileExport },
     { to: '/settings/notifications', label: 'Notificações', icon: IconBell },
+    { to: '/help', label: 'Ajuda e treinamento', icon: IconSchool },
   ],
 }
 

@@ -1,4 +1,5 @@
-import { Badge, Paper, Stack, Text, Title } from '@mantine/core'
+import { Badge, Group, Paper, Stack, Text, Title } from '@mantine/core'
+import { HelpLink } from '@/features/help/help-link'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import type { CardSummary } from '@/features/board/api'
@@ -24,7 +25,10 @@ export function QaQueuePage() {
   return (
     <Stack gap="md">
       <div>
-        <Title order={2}>Fila de testes</Title>
+        <Group justify="space-between">
+          <Title order={2}>Fila de testes</Title>
+          <HelpLink topic="qa" />
+        </Group>
         <Text size="sm" c="dimmed">
           Cards nas colunas "Em teste" dos projetos em que você valida, do mais antigo ao mais
           recente.

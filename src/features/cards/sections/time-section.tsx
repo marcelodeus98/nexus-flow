@@ -1,6 +1,6 @@
-import { ActionIcon, Button, Group, Paper, SimpleGrid, Text, TextInput } from '@mantine/core'
+import { ActionIcon, Button, Group, Paper, SimpleGrid, Stack, Text, TextInput } from '@mantine/core'
 import { IconPlayerPause, IconPlayerPlay, IconTrash } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from '@/shared/notify/toast'
 import {
   formatDuration,
@@ -10,6 +10,7 @@ import {
   useTimer,
   useTimerActions,
 } from '@/features/time/api'
+import { formatMinutes, planEntry, time } from '@/features/time/manual-entry'
 import { apiErrorMessage } from '@/shared/api/errors'
 import type { CardDetail } from '../api'
 import { Section } from './section'
@@ -85,7 +86,9 @@ export function TimeSection({
               onSuccess: () => setAdding(false),
               onError: (error) =>
                 toast.error(
-                  apiErrorMessage(error, { 400: 'Confira a data e a duração (máximo 24 h).' }),
+                  apiErrorMessage(error, {
+                    400: 'O lançamento precisa terminar até agora e durar no máximo 24 h.',
+                  }),
                 ),
             })
           }
@@ -127,6 +130,8 @@ export function TimeSection({
   )
 }
 
+// Time already worked: the day, how long, and (optionally) when it started.
+// The summary below says exactly what will be recorded, or why it cannot.
 function ManualEntryForm({
   pending,
   onSubmit,
@@ -134,65 +139,89 @@ function ManualEntryForm({
   pending: boolean
   onSubmit: (input: { startedAt: string; durationMinutes: number; note?: string }) => void
 }) {
-  const [date, setDate] = useState(() => new Date().toLocaleDateString('en-CA'))
-  const [start, setStart] = useState('09:00')
-  const [hours, setHours] = useState('1')
+  const now = useNow(30_000)
+  const today = now.toLocaleDateString('en-CA')
+  const [day, setDay] = useState(today)
+  const [start, setStart] = useState('')
+  const [duration, setDuration] = useState('')
   const [note, setNote] = useState('')
+  // The clock ticks while the form is open, so "ends now" stays right.
+  const plan = planEntry({ day, start, duration }, now)
+  const touched = duration.trim() !== ''
 
   return (
     <Paper withBorder radius="md" p="sm">
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          const durationMinutes = Math.round(Number(hours.replace(',', '.')) * 60)
-          if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) return
+          if (!plan.ok) return
           onSubmit({
-            // Local date and time as typed, sent with the browser's offset.
-            startedAt: new Date(`${date}T${start}`).toISOString(),
-            durationMinutes,
+            startedAt: plan.startedAt.toISOString(),
+            durationMinutes: plan.minutes,
             note: note.trim() || undefined,
           })
         }}
       >
-        <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="xs">
-          <TextInput
-            size="xs"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            aria-label="Dia"
-            required
-          />
-          <TextInput
-            size="xs"
-            type="time"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            aria-label="Início"
-            required
-          />
-          <TextInput
-            size="xs"
-            inputMode="decimal"
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
-            aria-label="Horas"
-            placeholder="Horas"
-            required
-          />
+        <Stack gap="xs">
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xs">
+            <TextInput
+              size="xs"
+              label="Duração"
+              placeholder="1h30, 1:30 ou 90m"
+              autoFocus
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              required
+            />
+            <TextInput
+              size="xs"
+              type="date"
+              label="Dia"
+              max={today}
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              required
+            />
+            <TextInput
+              size="xs"
+              type="time"
+              label="Início (opcional)"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
+          </SimpleGrid>
           <TextInput
             size="xs"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Nota (opcional)"
+            placeholder="O que foi feito (opcional)"
             aria-label="Nota"
             maxLength={500}
           />
-          <Button type="submit" size="xs" loading={pending}>
-            Lançar
-          </Button>
-        </SimpleGrid>
+          <Group justify="space-between" gap="xs" wrap="nowrap">
+            <Text size="xs" c={touched && !plan.ok ? 'red' : 'dimmed'}>
+              {!touched
+                ? 'Registra tempo já trabalhado. Sem início, hoje termina agora e outros dias começam às 09:00.'
+                : plan.ok
+                  ? `Registra ${formatMinutes(plan.minutes)} em ${plan.startedAt.toLocaleDateString('pt-BR')}, das ${time(plan.startedAt)} às ${time(plan.endedAt)}.`
+                  : plan.reason}
+            </Text>
+            <Button type="submit" size="xs" loading={pending} disabled={!plan.ok}>
+              Lançar
+            </Button>
+          </Group>
+        </Stack>
       </form>
     </Paper>
   )
+}
+
+// The current time, refreshed every `ms`.
+function useNow(ms: number) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), ms)
+    return () => clearInterval(timer)
+  }, [ms])
+  return now
 }

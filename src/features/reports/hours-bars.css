@@ -51,3 +51,9 @@
   font-size: 0.875rem;
   color: var(--nexa-slate);
 }
+
+.quality__table summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--nexa-slate);
+}

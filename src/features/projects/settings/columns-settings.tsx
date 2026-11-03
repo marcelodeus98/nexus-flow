@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
   Button,
+  ColorInput,
   Group,
   NumberInput,
   Paper,
@@ -15,6 +16,7 @@ import { useState } from 'react'
 import { toast } from '@/shared/notify/toast'
 import {
   boardKeys,
+  categoryColors,
   categoryLabels,
   useBoard,
   type BoardColumn,
@@ -23,6 +25,7 @@ import {
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
 import type { Project } from '../api'
+import '../projects-page.css'
 
 const categoryOptions = Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))
 
@@ -138,6 +141,29 @@ export function ColumnsSettings({ project, boardId }: { project: Project; boardI
                 allowDeselect={false}
                 data={categoryOptions}
               />
+              <ColorInput
+                size="xs"
+                w={130}
+                format="hex"
+                aria-label={`Cor de ${column.name}`}
+                placeholder="Cor da categoria"
+                defaultValue={column.color ?? ''}
+                swatches={Object.values(categoryColors)}
+                swatchesPerRow={7}
+                leftSection={
+                  <span
+                    className="columns-settings__swatch"
+                    style={{ background: column.color ?? categoryColors[column.category] }}
+                  />
+                }
+                onChangeEnd={(value) => {
+                  const color = value ? value.toUpperCase() : null
+                  if (color !== column.color) update.mutate({ id: column.id, color })
+                }}
+                onBlur={(e) => {
+                  if (!e.target.value && column.color) update.mutate({ id: column.id, color: null })
+                }}
+              />
               <NumberInput
                 size="xs"
                 w={120}
@@ -199,8 +225,9 @@ export function ColumnsSettings({ project, boardId }: { project: Project; boardI
         </Button>
       </Group>
       <Text size="sm" c="dimmed">
-        O limite de WIP aparece no board quando é ultrapassado. Para bloquear a entrada, crie a
-        regra "Respeitar o limite de WIP" na aba Regras.
+        Sem cor escolhida, a coluna usa a cor da categoria. O limite de WIP aparece no board quando
+        é ultrapassado. Para bloquear a entrada, crie a regra "Respeitar o limite de WIP" na aba
+        Regras.
       </Text>
     </Stack>
   )

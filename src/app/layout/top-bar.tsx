@@ -1,4 +1,5 @@
 import { ActionIcon, Avatar, Breadcrumbs, Group, Stack, Text } from '@mantine/core'
+import { Link } from 'react-router-dom'
 import { IconChevronRight, IconMenu2, IconX } from '@tabler/icons-react'
 import { NotificationBell } from '@/features/notifications/notification-bell'
 import { SearchDialog } from '@/features/search/search-dialog'
@@ -50,7 +51,13 @@ export function TopBar({
         <TimerWidget />
         <ApiStatus />
         <NotificationBell />
-        <Group gap="sm" wrap="nowrap" className="topbar__profile">
+        <Group
+          gap="sm"
+          wrap="nowrap"
+          className="topbar__profile"
+          renderRoot={(props) => <Link to="/me" {...props} />}
+          aria-label={`Minha área: ${user.name}`}
+        >
           <Stack gap={0} align="flex-end" className="topbar__profile-text">
             <Text size="sm" fw={600} c="dark">
               {user.name}

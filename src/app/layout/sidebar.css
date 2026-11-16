@@ -259,3 +259,31 @@
   border-radius: 0.25rem;
   background: rgba(255, 255, 255, 0.12);
 }
+
+/* Avatar and name open the person's own area (/me). */
+.sidebar__me {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  border-radius: 0.6rem;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.sidebar__me:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__me:focus-visible {
+  outline: 2px solid var(--nexa-teal);
+  outline-offset: 2px;
+}
+
+.sidebar--collapsed .sidebar__me {
+  flex: 0 0 auto;
+}

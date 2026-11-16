@@ -16,6 +16,7 @@ function pageLabel(pathname: string): string {
   if (first === 'admin') return 'Administração'
   if (first === 'exports') return 'Exportações'
   if (first === 'team-reports') return 'Relatórios de equipe'
+  if (first === 'me') return 'Minha área'
   if (first === 'overview') return 'Visão geral'
   if (first === 'qa') return 'Fila de testes'
   if (first === 'help') return 'Ajuda e treinamento'

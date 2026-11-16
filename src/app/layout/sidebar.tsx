@@ -8,6 +8,7 @@ import {
   Stack,
   Text,
   Tooltip,
+  UnstyledButton,
 } from '@mantine/core'
 import {
   IconBell,
@@ -196,19 +197,28 @@ export function Sidebar({
         </ScrollArea>
 
         <Group className="sidebar__footer" gap="sm" wrap="nowrap">
-          <Avatar radius="xl" color="brand" variant="filled">
-            {user.initials}
-          </Avatar>
-          {!collapsed && (
-            <Stack gap={0} className="sidebar__user">
-              <Text size="sm" fw={600} c="white" truncate>
-                {user.name}
-              </Text>
-              <Text size="xs" c="rgba(255,255,255,0.5)">
-                {user.role}
-              </Text>
-            </Stack>
-          )}
+          {/* The person opens their own area (profile and daily). */}
+          <UnstyledButton
+            component={Link}
+            to="/me"
+            onClick={onCloseMobile}
+            className="sidebar__me"
+            aria-label={`Minha área: ${user.name}`}
+          >
+            <Avatar radius="xl" color="brand" variant="filled">
+              {user.initials}
+            </Avatar>
+            {!collapsed && (
+              <Stack gap={0} className="sidebar__user">
+                <Text size="sm" fw={600} c="white" truncate>
+                  {user.name}
+                </Text>
+                <Text size="xs" c="rgba(255,255,255,0.5)">
+                  {user.role}
+                </Text>
+              </Stack>
+            )}
+          </UnstyledButton>
           <ActionIcon
             variant="subtle"
             c="rgba(255,255,255,0.5)"

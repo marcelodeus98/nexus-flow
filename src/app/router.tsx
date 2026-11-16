@@ -138,6 +138,12 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'me',
+        lazy: async () => ({
+          Component: (await import('@/features/me/me-page')).MePage,
+        }),
+      },
+      {
         path: 'team-reports',
         lazy: async () => ({
           Component: (await import('@/features/team-reports/team-report-page')).TeamReportPage,

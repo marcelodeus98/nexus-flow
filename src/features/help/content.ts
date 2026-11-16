@@ -64,11 +64,25 @@ export const topics: HelpTopic[] = [
           {
             list: [
               'Sidebar (à esquerda): Projetos, Fila de testes, Notificações, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração.',
-              'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil.',
+              'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil. Clique no seu nome ou na sua foto (no topo ou no rodapé da sidebar) para abrir a Minha área.',
               'Dentro de um projeto: as abas Board, Backlog e sprints, Casos de teste, Relatórios e Configurações.',
             ],
           },
           { tip: 'O botão de menu no topo recolhe a sidebar para ganhar espaço no board.' },
+        ],
+      },
+      {
+        q: 'O que é a Minha área e como uso para a daily?',
+        a: [
+          'Clique no seu nome ou na sua foto para abrir a Minha área: seus dados, times (com estrela onde você é líder) e projetos com o seu papel em cada um.',
+          {
+            list: [
+              'Ontem: os seus cards que chegaram a Concluído e os cards em que você trabalhou, com as horas lançadas, as movimentações que você fez e as validações de QA. Na segunda-feira, mostra desde sexta.',
+              'Hoje: o timer rodando, o que está em andamento, o que vence hoje, o que está a fazer e o que você já fez hoje.',
+              'Atenção: cards atrasados, reprovados pelo QA e bugs abertos com você. São os possíveis impedimentos.',
+            ],
+          },
+          'O botão "Copiar resumo" gera o texto da daily (ontem, hoje e impedimentos) pronto para colar no chat ou ler na reunião. Dá para escolher outro dia no campo "Dia". Cada card abre direto ao ser clicado.',
         ],
       },
       {

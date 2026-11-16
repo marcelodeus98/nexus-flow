@@ -689,6 +689,7 @@ export const topics: HelpTopic[] = [
             ],
           },
           'Administradores têm acesso a todos os projetos.',
+          'Em Usuários, Departamentos, Times e Tags, a ação "Visualizar" (ou um clique na linha) abre um painel só de leitura: do usuário, os times, projetos com o papel, o trabalho de agora, as horas e o histórico; do departamento e do time, as pessoas e o que cada uma está fazendo; da tag, os cards que a usam. O botão "Editar" fica dentro do painel. Os casos de teste de um projeto também têm "Visualizar", com os passos e as últimas execuções.',
         ],
       },
       {

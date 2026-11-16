@@ -15,3 +15,20 @@
 .test-cases > li + li {
   border-top: 1px solid var(--nexa-border);
 }
+
+/* Read-only view of a test case. */
+.test-case-view__steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.test-case-view__run + .test-case-view__run {
+  margin-top: 12px;
+}
+
+.test-case-view__run .view-drawer__card {
+  margin-top: 4px;
+}

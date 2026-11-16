@@ -18,6 +18,7 @@ import { useCurrentProject } from '@/features/projects/project-context'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { toast } from '@/shared/notify/toast'
 import { useSaveTestCase, useTestCases, type TestCase } from './test-cases-api'
+import { TestCaseView } from './test-case-view'
 import './test-cases-page.css'
 
 // The project's test case library: reusable scripts QA attaches to cards and
@@ -34,6 +35,7 @@ export function TestCasesPage() {
   const query = useDeferredValue(search.trim().toLowerCase())
   // undefined: closed; null: creating; a case: editing.
   const [editing, setEditing] = useState<TestCase | null | undefined>(undefined)
+  const [viewing, setViewing] = useState<TestCase | null>(null)
 
   const list = (cases.data ?? []).filter((c) => !query || c.title.toLowerCase().includes(query))
 
@@ -92,11 +94,16 @@ export function TestCasesPage() {
                     {testCase.preconditions && ` · pré-condições: ${testCase.preconditions}`}
                   </Text>
                 </Stack>
-                {editable && (
-                  <Group gap="xs">
+                <Group gap="xs">
+                  <Button size="xs" variant="subtle" onClick={() => setViewing(testCase)}>
+                    Visualizar
+                  </Button>
+                  {editable && (
                     <Button size="xs" variant="default" onClick={() => setEditing(testCase)}>
                       Editar
                     </Button>
+                  )}
+                  {editable && (
                     <Button
                       size="xs"
                       variant="subtle"
@@ -110,14 +117,28 @@ export function TestCasesPage() {
                     >
                       {testCase.archivedAt ? 'Restaurar' : 'Arquivar'}
                     </Button>
-                  </Group>
-                )}
+                  )}
+                </Group>
               </li>
             ))}
           </ul>
         )}
       </Paper>
 
+      {viewing && (
+        <TestCaseView
+          testCaseId={viewing.id}
+          onClose={() => setViewing(null)}
+          onEdit={
+            editable
+              ? () => {
+                  setEditing(viewing)
+                  setViewing(null)
+                }
+              : undefined
+          }
+        />
+      )}
       {editing !== undefined && (
         <TestCaseDialog
           projectId={project.id}

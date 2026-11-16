@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setSession } from '@/shared/auth/session-store'
 import { mockApi } from '@/test/api'
@@ -28,7 +29,12 @@ const carla: User = {
   globalRole: 'USER',
 }
 
-const renderPage = () => renderWithProviders(<UsersPage />)
+const renderPage = () =>
+  renderWithProviders(
+    <MemoryRouter>
+      <UsersPage />
+    </MemoryRouter>,
+  )
 
 async function openEdit(name: string) {
   const user = userEvent.setup()
@@ -37,6 +43,47 @@ async function openEdit(name: string) {
   await user.click(screen.getByRole('button', { name: `Ações de ${name}` }))
   await user.click(await screen.findByRole('menuitem', { name: 'Editar' }))
   return { user, dialog: await screen.findByRole('dialog') }
+}
+
+const carlaOverview = {
+  ...{
+    id: 'u3',
+    name: 'Carla Dias',
+    email: 'carla@magistter.com.br',
+    jobTitle: 'QA',
+    globalRole: 'USER',
+    isActive: true,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    hasPassword: true,
+    department: null,
+  },
+  teams: [{ id: 't1', name: 'Squad Web', isLeader: true }],
+  ledTeams: [{ id: 't1', name: 'Squad Web' }],
+  projects: [
+    {
+      id: 'p1',
+      key: 'NEXA',
+      name: 'Nexa',
+      status: 'ACTIVE',
+      role: 'QA',
+      direct: false,
+      teams: ['Squad Web'],
+    },
+  ],
+  work: { status: 'IDLE', timer: null, inProgress: [], openCards: 2, overdue: 1 },
+  todaySeconds: 0,
+  weekSeconds: 7200,
+  lastActivityAt: null,
+  activity: [],
+  history: [
+    {
+      id: 'a1',
+      action: 'user.password_changed',
+      actor: 'Ana Lima',
+      metadata: { notified: true },
+      createdAt: '2026-11-10T12:00:00.000Z',
+    },
+  ],
 }
 
 describe('UsersPage', () => {
@@ -48,6 +95,7 @@ describe('UsersPage', () => {
     users = [ana, carla]
     api = mockApi(({ url = '', method, data }) => {
       if (url.endsWith('/password') && method === 'put') return [200, carla]
+      if (url === '/users/u3/overview') return [200, carlaOverview]
       if (url.startsWith('/users') && method === 'post') {
         const body = JSON.parse(String(data)) as Partial<User>
         const created = { ...ana, ...body, id: 'u2', department: null, globalRole: 'USER' as const }
@@ -100,6 +148,21 @@ describe('UsersPage', () => {
 
     const put = await putRequest()
     expect(JSON.parse(String(put[0].data))).toEqual({ password: 'senha-digitada', notify: false })
+  })
+
+  it('opens a read-only view from the row, with Editar inside', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByText('Carla Dias'))
+
+    const drawer = await screen.findByRole('dialog')
+    expect(await within(drawer).findByText('Squad Web')).toBeInTheDocument()
+    expect(within(drawer).getByText(/QA · via Squad Web/)).toBeInTheDocument()
+    expect(within(drawer).getByText('Senha trocada por administrador')).toBeInTheDocument()
+    expect(within(drawer).getByText(/por Ana Lima/)).toBeInTheDocument()
+
+    await user.click(within(drawer).getByRole('button', { name: /Editar/ }))
+    expect(await screen.findByText('Editar usuário')).toBeInTheDocument()
   })
 
   it('does not offer to change your own password here', async () => {

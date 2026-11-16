@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ActionIcon, Button, ColorInput, Group, Paper, Stack, Text, TextInput } from '@mantine/core'
-import { IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconEye, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { toast } from '@/shared/notify/toast'
 import type { Tag } from '@/features/board/api'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
+import { TagView } from './tag-view'
 
 // Editable list of tags under one endpoint: a project's (/projects/:id/tags)
 // or the global ones (/tags, admin). Every project's tag list includes the
@@ -43,9 +44,11 @@ export function TagEditor({
   })
   const [name, setName] = useState('')
   const [color, setColor] = useState('#017A72')
+  const [viewing, setViewing] = useState<Tag | null>(null)
 
   return (
     <Stack gap="md">
+      {viewing && <TagView endpoint={endpoint} tag={viewing} onClose={() => setViewing(null)} />}
       <Stack gap="xs">
         {tags.map((tag) => (
           <Paper key={`${tag.id}-${tag.name}-${tag.color}`} withBorder radius="md" p="xs">
@@ -72,6 +75,14 @@ export function TagEditor({
                   if (value && value !== tag.name) update.mutate({ id: tag.id, name: value })
                 }}
               />
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                aria-label={`Visualizar ${tag.name}`}
+                onClick={() => setViewing(tag)}
+              >
+                <IconEye size={16} />
+              </ActionIcon>
               <ActionIcon
                 variant="subtle"
                 color="red"

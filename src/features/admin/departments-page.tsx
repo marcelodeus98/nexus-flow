@@ -12,11 +12,12 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconEye, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { confirmDanger } from '@/shared/notify/confirm'
 import { toast } from '@/shared/notify/toast'
+import { DepartmentView } from './admin-views'
 import { useDeleteDepartment, useDepartments, useSaveDepartment, type Department } from './api'
 
 export function DepartmentsPage() {
@@ -24,6 +25,7 @@ export function DepartmentsPage() {
   const remove = useDeleteDepartment()
   // undefined: closed; null: creating; a department: editing.
   const [editing, setEditing] = useState<Department | null | undefined>(undefined)
+  const [viewing, setViewing] = useState<Department | null>(null)
 
   function confirmDelete(department: Department) {
     confirmDanger({
@@ -66,7 +68,11 @@ export function DepartmentsPage() {
           </Table.Thead>
           <Table.Tbody>
             {departments.data?.map((department) => (
-              <Table.Tr key={department.id}>
+              <Table.Tr
+                key={department.id}
+                className="admin-row--clickable"
+                onClick={() => setViewing(department)}
+              >
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
                     <ColorSwatch color={department.color} size={12} />
@@ -81,8 +87,16 @@ export function DepartmentsPage() {
                   </Group>
                 </Table.Td>
                 <Table.Td>{department.userCount}</Table.Td>
-                <Table.Td>
+                <Table.Td onClick={(e) => e.stopPropagation()}>
                   <Group gap={4} justify="flex-end" wrap="nowrap">
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      aria-label={`Visualizar ${department.name}`}
+                      onClick={() => setViewing(department)}
+                    >
+                      <IconEye size={16} />
+                    </ActionIcon>
                     <ActionIcon
                       variant="subtle"
                       color="gray"
@@ -114,6 +128,16 @@ export function DepartmentsPage() {
         </Text>
       )}
 
+      {viewing && (
+        <DepartmentView
+          departmentId={viewing.id}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+        />
+      )}
       {editing !== undefined && (
         <DepartmentDialog department={editing ?? undefined} onClose={() => setEditing(undefined)} />
       )}

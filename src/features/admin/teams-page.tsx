@@ -18,6 +18,7 @@ import { useState, type FormEvent } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { confirmDanger } from '@/shared/notify/confirm'
 import { toast } from '@/shared/notify/toast'
+import { TeamView } from './admin-views'
 import {
   useActiveUsers,
   useDeleteTeam,
@@ -32,6 +33,7 @@ export function TeamsPage() {
   const teams = useTeams()
   // undefined: closed; null: creating; a team: editing.
   const [editing, setEditing] = useState<TeamSummary | null | undefined>(undefined)
+  const [viewing, setViewing] = useState<TeamSummary | null>(null)
 
   return (
     <Stack gap="md">
@@ -69,9 +71,14 @@ export function TeamsPage() {
                   </Text>
                 </Group>
               </Stack>
-              <Button variant="default" size="xs" onClick={() => setEditing(team)}>
-                Gerenciar
-              </Button>
+              <Group gap={6} wrap="nowrap">
+                <Button variant="subtle" size="xs" onClick={() => setViewing(team)}>
+                  Visualizar
+                </Button>
+                <Button variant="default" size="xs" onClick={() => setEditing(team)}>
+                  Gerenciar
+                </Button>
+              </Group>
             </Group>
           </Card>
         ))}
@@ -87,6 +94,16 @@ export function TeamsPage() {
         </Text>
       )}
 
+      {viewing && (
+        <TeamView
+          teamId={viewing.id}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+        />
+      )}
       {editing !== undefined && (
         <TeamDialog teamId={editing?.id} onClose={() => setEditing(undefined)} />
       )}

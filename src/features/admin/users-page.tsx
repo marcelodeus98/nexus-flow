@@ -18,6 +18,7 @@ import { apiErrorMessage } from '@/shared/api/errors'
 import { useSessionState } from '@/shared/auth/session-store'
 import { toast } from '@/shared/notify/toast'
 import { useSetUserStatus, useUsers, type User } from './api'
+import { UserView } from './admin-views'
 import { UserDialog } from './user-dialog'
 
 export function UsersPage() {
@@ -30,6 +31,7 @@ export function UsersPage() {
   const setStatus = useSetUserStatus()
   // undefined: closed; null: creating; a user: editing.
   const [editing, setEditing] = useState<User | null | undefined>(undefined)
+  const [viewing, setViewing] = useState<User | null>(null)
 
   const rows = users.data?.pages.flatMap((page) => page.items) ?? []
 
@@ -93,7 +95,12 @@ export function UsersPage() {
           </Table.Thead>
           <Table.Tbody>
             {rows.map((user) => (
-              <Table.Tr key={user.id} opacity={user.isActive ? 1 : 0.6}>
+              <Table.Tr
+                key={user.id}
+                opacity={user.isActive ? 1 : 0.6}
+                className="admin-row--clickable"
+                onClick={() => setViewing(user)}
+              >
                 <Table.Td>
                   <Text size="sm" fw={500}>
                     {user.name}
@@ -123,7 +130,7 @@ export function UsersPage() {
                   )}
                 </Table.Td>
                 <Table.Td>{user.isActive ? 'Ativo' : 'Desativado'}</Table.Td>
-                <Table.Td>
+                <Table.Td onClick={(e) => e.stopPropagation()}>
                   <Menu position="bottom-end" withinPortal>
                     <Menu.Target>
                       <ActionIcon
@@ -135,6 +142,7 @@ export function UsersPage() {
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      <Menu.Item onClick={() => setViewing(user)}>Visualizar</Menu.Item>
                       <Menu.Item onClick={() => setEditing(user)}>Editar</Menu.Item>
                       {user.id !== currentUserId && (
                         <Menu.Item
@@ -169,6 +177,17 @@ export function UsersPage() {
         <Text size="sm" c="red">
           {apiErrorMessage(users.error)}
         </Text>
+      )}
+
+      {viewing && (
+        <UserView
+          userId={viewing.id}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+        />
       )}
 
       {editing !== undefined && (

@@ -51,7 +51,13 @@ export function SprintReportPage() {
   const committed = s.history.filter((h) => !h.addedLate)
   const late = s.history.filter((h) => h.addedLate)
   const completed = s.history.filter((h) => h.outcome === 'COMPLETED')
-  const spent = s.history.reduce((sum, h) => sum + (h.timeSpentMinutes ?? 0), 0)
+  // Frozen at closing; live while the sprint runs; nothing before it starts.
+  const spent =
+    s.status === 'CLOSED'
+      ? s.history.reduce((sum, h) => sum + (h.timeSpentMinutes ?? 0), 0)
+      : s.liveTimeSpentMinutes
+  const hours = (minutes: number) =>
+    `${(Math.round((minutes / 60) * 10) / 10).toLocaleString('pt-BR')} h`
   const points = (list: typeof s.history) =>
     list.reduce((sum, h) => sum + (h.pointsAtEnd ?? h.pointsAtStart ?? 0), 0)
 
@@ -77,8 +83,13 @@ export function SprintReportPage() {
     },
     {
       label: 'Tempo registrado',
-      value: s.status === 'CLOSED' ? `${Math.round((spent / 60) * 10) / 10} h` : '—',
-      detail: s.status === 'CLOSED' ? 'nos cards da sprint' : 'calculado no encerramento',
+      value: spent === null ? '—' : hours(spent),
+      detail:
+        s.status === 'CLOSED'
+          ? 'nos cards da sprint'
+          : s.status === 'ACTIVE'
+            ? 'até agora, nos cards da sprint (timers rodando entram ao pausar ou parar)'
+            : 'a sprint ainda não começou',
     },
   ]
 

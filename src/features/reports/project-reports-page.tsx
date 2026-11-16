@@ -51,16 +51,31 @@ export function ProjectReportsPage() {
   const groupBy = (params.get('groupBy') as GroupBy | null) ?? 'user'
   const sprintId = params.get('sprint') ?? undefined
   const view = params.get('view') === 'quality' ? 'quality' : 'hours'
-  const set = (name: string, value: string | undefined) =>
+  const setMany = (values: Record<string, string | undefined>) =>
     setParams(
       () => {
         const next = new URLSearchParams(window.location.search)
-        if (value) next.set(name, value)
-        else next.delete(name)
+        for (const [name, value] of Object.entries(values)) {
+          if (value) next.set(name, value)
+          else next.delete(name)
+        }
         return next
       },
       { replace: true },
     )
+  const set = (name: string, value: string | undefined) => setMany({ [name]: value })
+
+  // Picking a sprint makes the period its dates (the period still applies,
+  // so a month that misses the sprint would show nothing); "Todas" goes back
+  // to this month. The dates can still be changed afterwards.
+  function chooseSprint(id: string | undefined) {
+    const sprint = sprints.data?.find((s) => s.id === id)
+    setMany(
+      sprint
+        ? { sprint: sprint.id, from: sprint.startDate, to: sprint.endDate }
+        : { sprint: undefined, from: undefined, to: undefined },
+    )
+  }
 
   const time = useTimeReport(project.id, { from, to, groupBy, sprintId })
   const estimate = useEstimateVsActual(project.id, sprintId, seesEveryone)
@@ -124,7 +139,7 @@ export function ProjectReportsPage() {
               size="xs"
               w={180}
               value={sprintId ?? ALL}
-              onChange={(v) => set('sprint', !v || v === ALL ? undefined : v)}
+              onChange={(v) => chooseSprint(!v || v === ALL ? undefined : v)}
               allowDeselect={false}
               data={[
                 { value: ALL, label: 'Todas' },

@@ -40,7 +40,13 @@ export type SprintHistoryEntry = {
   card: { id: string; number: number; title: string; deleted: boolean }
 }
 
-export type SprintDetail = Sprint & { totals: SprintTotals; history: SprintHistoryEntry[] }
+export type SprintDetail = Sprint & {
+  totals: SprintTotals
+  // Active sprint only: minutes logged on its cards since it started. A
+  // closed sprint's figure is in history[].timeSpentMinutes.
+  liveTimeSpentMinutes: number | null
+  history: SprintHistoryEntry[]
+}
 
 export type Burndown = {
   sprint: Sprint

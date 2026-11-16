@@ -396,7 +396,8 @@ export const topics: HelpTopic[] = [
       {
         q: 'O que acontece quando encerro a sprint?',
         a: [
-          'O sistema registra como cada card terminou: concluído, passou para a próxima sprint ou voltou ao backlog. Para os não concluídos, você escolhe o destino (o backlog ou uma sprint planejada). O relatório da sprint guarda o compromisso inicial, o que entrou depois, o que foi concluído e o tempo registrado.',
+          'O sistema registra como cada card terminou: concluído, passou para a próxima sprint ou voltou ao backlog. Para os não concluídos, você escolhe o destino (o backlog ou uma sprint planejada). O relatório da sprint guarda o compromisso inicial, o que entrou depois, o que foi concluído e o tempo registrado. Enquanto a sprint está em andamento, o tempo registrado aparece até o momento.',
+          'O burndown em horas usa a estimativa em horas dos cards, não o tempo lançado: card sem estimativa em horas não aparece nele.',
         ],
       },
     ],
@@ -571,6 +572,7 @@ export const topics: HelpTopic[] = [
             ],
           },
           'Os filtros (período e sprint) ficam no endereço da página, então um relatório pode ser compartilhado como link.',
+          'Ao escolher uma sprint, o período passa a ser as datas dela. O período continua valendo junto com a sprint: só entram as horas lançadas dentro das datas, nos cards que estão na sprint. Timer rodando só entra ao ser pausado ou parado.',
         ],
       },
       {

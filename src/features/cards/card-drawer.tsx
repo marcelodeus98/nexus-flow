@@ -365,6 +365,11 @@ function CardDetailView({ card, onClose }: { card: CardDetail; onClose: () => vo
         projectId={project.id}
         card={card}
         canValidate={!readOnly && can('card:validate')}
+        // Unknown while the board loads: let the API decide.
+        inTesting={
+          columns.length === 0 ||
+          columns.find((column) => column.id === card.columnId)?.category === 'TESTING'
+        }
       />
 
       <TestsSection projectId={project.id} card={card} canRun={!readOnly && can('card:validate')} />

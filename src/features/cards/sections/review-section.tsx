@@ -2,9 +2,9 @@ import { Badge, Button, Group, Modal, Stack, Text, Textarea } from '@mantine/cor
 import { IconCheck, IconChecks, IconX } from '@tabler/icons-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { upsertCard, type CardSummary } from '@/features/board/api'
+import { boardKeys, upsertCard, type CardSummary } from '@/features/board/api'
 import { moveErrorMessage } from '@/features/board/move-errors'
-import { http } from '@/shared/api/http'
+import { ApiError, http } from '@/shared/api/http'
 import { toast } from '@/shared/notify/toast'
 import { cardKeys, type CardDetail } from '../api'
 import { Section } from './section'
@@ -26,10 +26,13 @@ export function ReviewSection({
   projectId,
   card,
   canValidate,
+  inTesting,
 }: {
   projectId: string
   card: CardDetail
   canValidate: boolean
+  // QA only approves or rejects cards in an "Em teste" column.
+  inTesting: boolean
 }) {
   const queryClient = useQueryClient()
   const [rejecting, setRejecting] = useState(false)
@@ -49,13 +52,20 @@ export function ReviewSection({
       toast.success(input.outcome === 'APPROVED' ? 'Card aprovado.' : 'Card reprovado e devolvido.')
     },
     // "Aprovar e concluir" may approve and then be stopped by a board rule.
-    onError: (error) => toast.error(moveErrorMessage(error)),
+    // 409: someone took the card out of testing meanwhile.
+    onError: (error) =>
+      toast.error(
+        error instanceof ApiError && error.status === 409
+          ? 'O card não está mais em "Em teste". Atualizamos o card; só dá para validar em teste.'
+          : moveErrorMessage(error),
+      ),
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: cardKeys.reviews(card.id) }),
         queryClient.invalidateQueries({ queryKey: cardKeys.byNumber(projectId, card.number) }),
         // An approved card leaves the testing queue.
         queryClient.invalidateQueries({ queryKey: ['qa', 'queue'] }),
+        queryClient.invalidateQueries({ queryKey: boardKeys.all(projectId) }),
       ]),
   })
 
@@ -80,7 +90,13 @@ export function ReviewSection({
         </>
       }
     >
-      {canValidate && (
+      {canValidate && !inTesting && (
+        <Text size="sm" c="dimmed">
+          Para aprovar ou reprovar, o card precisa estar numa coluna &quot;Em teste&quot;. Cada
+          entrada no teste começa uma validação nova.
+        </Text>
+      )}
+      {canValidate && inTesting && (
         <Group gap="xs">
           <Button
             size="xs"

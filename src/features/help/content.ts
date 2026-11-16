@@ -525,6 +525,7 @@ export const topics: HelpTopic[] = [
         q: 'O que coloca um card na Fila de testes?',
         a: [
           'Estar numa coluna da categoria "Em teste", ainda sem aprovação, num projeto ativo de que você participa. Todos os membros acompanham a fila; aprovar e reprovar fica com QA, PO e gestor. O card sai da fila quando é aprovado, reprovado ou movido para outra coluna. Com "Aprovar" (sem concluir), ele continua na coluna "Em teste" até alguém movê-lo, mas já não aparece na fila.',
+          'Aprovar e reprovar só funcionam com o card numa coluna "Em teste". Cada vez que o card entra no teste, começa uma validação nova: uma aprovação anterior deixa de valer e ele volta para a fila.',
           'A fila mostra primeiro quem espera há mais tempo. O "em teste desde" é a hora em que o card entrou na coluna desta vez: se ele foi reprovado e voltou, conta a partir da volta.',
         ],
       },

@@ -25,7 +25,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 import { Link, useLocation } from 'react-router-dom'
-import { useProjects } from '@/features/projects/api'
+import { useProjects, type ProjectRole } from '@/features/projects/api'
 import { BrandIcon } from '@/shared/brand/brand-icon'
 import { BrandLogo } from '@/shared/brand/brand-logo'
 import './sidebar.css'
@@ -33,15 +33,31 @@ import './sidebar.css'
 type NavItem = { to: string; label: string; icon: Icon; end?: boolean }
 type NavSection = { title: string; items: NavItem[] }
 
+const EXPORTS: NavItem = { to: '/exports', label: 'Exportações', icon: IconFileExport }
+
+// Exports come from reports, so the link is for whoever can open one: every
+// project role but Leitor ('reports:view-own'), and admins.
+const REPORTING_ROLES: ReadonlySet<ProjectRole> = new Set([
+  'MANAGER',
+  'PRODUCT_OWNER',
+  'DEVELOPER',
+  'QA',
+  'PROCESS',
+])
+
 const MAIN: NavSection = {
   title: 'Principal',
   items: [
     { to: '/', label: 'Projetos', icon: IconLayoutKanban, end: true },
     { to: '/qa', label: 'Fila de testes', icon: IconTestPipe },
-    { to: '/exports', label: 'Exportações', icon: IconFileExport },
     { to: '/settings/notifications', label: 'Notificações', icon: IconBell },
     { to: '/help', label: 'Ajuda e treinamento', icon: IconSchool },
   ],
+}
+
+// Reports above a single project, under "Relatórios".
+function reportsSection(access: { canExport: boolean }): NavSection | null {
+  return access.canExport ? { title: 'Relatórios', items: [EXPORTS] } : null
 }
 
 const ADMIN: NavSection = {
@@ -88,8 +104,15 @@ export function Sidebar({
     .filter((project) => project.status === 'ACTIVE')
     .slice(0, MAX_PROJECTS)
     .map((project) => ({ to: `/p/${project.key}`, label: project.name, icon: IconLayoutKanban }))
+  const canExport =
+    isAdmin ||
+    (projects.data ?? []).some(
+      (project) => project.myRole !== null && REPORTING_ROLES.has(project.myRole),
+    )
+  const reports = reportsSection({ canExport })
   const sections = [
     MAIN,
+    ...(reports ? [reports] : []),
     ...(projectItems.length ? [{ title: 'Meus projetos', items: projectItems }] : []),
     ...(isAdmin ? [ADMIN] : []),
   ]

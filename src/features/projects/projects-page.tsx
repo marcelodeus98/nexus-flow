@@ -17,7 +17,9 @@ import {
 import { IconLayoutKanban, IconPlus } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useActiveUsers } from '@/features/admin/api'
 import { apiErrorMessage } from '@/shared/api/errors'
+import { useCurrentUser } from '@/shared/auth/session-store'
 import { toast } from '@/shared/notify/toast'
 import {
   methodologyLabels,
@@ -32,6 +34,8 @@ import './projects-page.css'
 
 export function ProjectsPage() {
   const projects = useProjects()
+  // Only admins create projects (the API refuses everyone else).
+  const isAdmin = useCurrentUser()?.globalRole === 'ADMIN'
   const [creating, setCreating] = useState(false)
   const active = projects.data?.filter((p) => p.status === 'ACTIVE') ?? []
   const archived = projects.data?.filter((p) => p.status === 'ARCHIVED') ?? []
@@ -40,9 +44,11 @@ export function ProjectsPage() {
     <Stack gap="lg">
       <Group justify="space-between">
         <Title order={2}>Projetos</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>
-          Novo projeto
-        </Button>
+        {isAdmin && (
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>
+            Novo projeto
+          </Button>
+        )}
       </Group>
 
       {projects.isPending && (
@@ -63,7 +69,9 @@ export function ProjectsPage() {
             </ThemeIcon>
             <Text fw={600}>Nenhum projeto ainda</Text>
             <Text size="sm" c="dimmed">
-              Crie um projeto ou peça para ser adicionado a um.
+              {isAdmin
+                ? 'Crie o primeiro projeto e escolha quem será o gestor.'
+                : 'Peça a um administrador ou ao gestor de um projeto para adicionar você.'}
             </Text>
           </Stack>
         </Card>
@@ -133,6 +141,9 @@ function ProjectGrid({
 function CreateProjectDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const create = useCreateProject()
+  const me = useCurrentUser()
+  const users = useActiveUsers()
+  const [managerId, setManagerId] = useState<string | null>(me?.id ?? null)
   const [name, setName] = useState('')
   const [key, setKey] = useState('')
   const [keyTouched, setKeyTouched] = useState(false)
@@ -159,6 +170,7 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
         methodology,
         defaultEstimateView: estimateView,
         qaFlow,
+        managerId: managerId ?? undefined,
       },
       {
         onSuccess: (project) => {
@@ -174,9 +186,6 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal opened onClose={onClose} title="Novo projeto">
       <Stack component="form" gap="md" onSubmit={submit}>
-        <Text size="sm" c="dimmed">
-          Você será o gestor do projeto.
-        </Text>
         <TextInput
           label="Nome"
           value={name}
@@ -195,6 +204,20 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
           pattern="[A-Za-z][A-Za-z0-9]{1,9}"
           title="2 a 10 letras ou números, começando com letra"
           styles={{ input: { fontFamily: 'monospace' } }}
+          required
+        />
+        <Select
+          label="Gestor"
+          description="Administra o projeto: membros, boards, regras e relatórios."
+          searchable
+          allowDeselect={false}
+          value={managerId}
+          onChange={setManagerId}
+          nothingFoundMessage="Ninguém encontrado"
+          data={(users.data ?? []).map((u) => ({
+            value: u.id,
+            label: u.id === me?.id ? `${u.name} (você)` : u.name,
+          }))}
           required
         />
         <Textarea

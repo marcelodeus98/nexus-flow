@@ -125,6 +125,8 @@ export function useCreateProject() {
       methodology: Methodology
       defaultEstimateView: EstimateView
       qaFlow?: boolean
+      // Admins only create projects; this person becomes the manager.
+      managerId?: string
     }) => http<Project>('/projects', json('POST', input)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
   })

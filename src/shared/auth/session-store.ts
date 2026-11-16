@@ -43,6 +43,12 @@ export function useSessionState(): SessionState {
   return useSyncExternalStore(subscribe, getSessionState)
 }
 
+// The signed-in user, or undefined while the session is unknown or absent.
+export function useCurrentUser(): SessionUser | undefined {
+  const session = useSessionState()
+  return session.status === 'authenticated' ? session.session.user : undefined
+}
+
 // Single flight: concurrent 401s and StrictMode double effects share one call,
 // so the API never sees the same refresh token twice from this tab.
 export function refreshSession(): Promise<Session | null> {

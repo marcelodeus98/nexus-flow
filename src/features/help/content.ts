@@ -63,7 +63,7 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Sidebar (à esquerda): Projetos, Fila de testes, Exportações, Notificações, seus projetos recentes e, para administradores, a Administração.',
+              'Sidebar (à esquerda): Projetos, Fila de testes, Exportações (para quem pode ver relatórios), Notificações, seus projetos recentes e, para administradores, a Administração.',
               'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil.',
               'Dentro de um projeto: as abas Board, Backlog e sprints, Casos de teste, Relatórios e Configurações.',
             ],
@@ -141,13 +141,14 @@ export const topics: HelpTopic[] = [
         a: [
           {
             steps: [
-              'Em Projetos, clique em "Novo projeto".',
+              'Em Projetos, clique em "Novo projeto". Só administradores criam projetos: se você precisa de um, peça a um administrador.',
+              'Escolha o gestor, que administra o projeto (membros, boards, regras e relatórios).',
               'Dê um nome e confira a chave sugerida (2 a 10 letras ou números). A chave não muda depois, porque está no número de todos os cards.',
               'Escolha a metodologia (Kanban, Scrum ou Híbrido) e a estimativa exibida nos cards (story points ou horas).',
               'Se o time tem QA, marque "Fluxo de QA": o board já nasce com a coluna "Em teste" e só deixa concluir cards aprovados.',
             ],
           },
-          'Quem cria o projeto vira o gestor dele.',
+          'O gestor escolhido entra como Gestor do projeto. Sem escolher, quem cria vira o gestor.',
         ],
       },
       {
@@ -510,7 +511,7 @@ export const topics: HelpTopic[] = [
           {
             steps: [
               'Quem desenvolve leva o card para a coluna "Em teste".',
-              'O card aparece na Fila de testes de quem valida (QA, PO e gestor).',
+              'O card aparece na Fila de testes de todos os membros do projeto. Quem valida (QA, PO e gestor) aprova ou reprova.',
               'O QA testa: executa os casos de teste anexados e o checklist de QA.',
               'Se está certo: "Aprovar" ou "Aprovar e concluir" (já leva para Concluído).',
               'Se não: "Reprovar" com o motivo. O card volta para "Em andamento", os responsáveis são avisados e começa uma nova rodada de testes.',
@@ -522,7 +523,7 @@ export const topics: HelpTopic[] = [
       {
         q: 'O que coloca um card na Fila de testes?',
         a: [
-          'Estar numa coluna da categoria "Em teste", ainda sem aprovação, num projeto ativo em que você pode validar. O card sai da fila quando é aprovado, reprovado ou movido para outra coluna. Com "Aprovar" (sem concluir), ele continua na coluna "Em teste" até alguém movê-lo, mas já não aparece na fila.',
+          'Estar numa coluna da categoria "Em teste", ainda sem aprovação, num projeto ativo de que você participa. Todos os membros acompanham a fila; aprovar e reprovar fica com QA, PO e gestor. O card sai da fila quando é aprovado, reprovado ou movido para outra coluna. Com "Aprovar" (sem concluir), ele continua na coluna "Em teste" até alguém movê-lo, mas já não aparece na fila.',
           'A fila mostra primeiro quem espera há mais tempo. O "em teste desde" é a hora em que o card entrou na coluna desta vez: se ele foi reprovado e voltou, conta a partir da volta.',
         ],
       },

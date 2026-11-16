@@ -15,7 +15,8 @@ type QueuedCard = CardSummary & {
 }
 
 // Cards waiting in "Em teste" columns and not approved yet, longest waiting
-// first, in every project where the user can validate (QA, PO, manager).
+// first, in every project of the user. Everyone follows the queue; approving
+// and rejecting stay with QA, PO and manager (in the card).
 export function QaQueuePage() {
   const queue = useQuery({
     queryKey: ['qa', 'queue'],
@@ -32,8 +33,8 @@ export function QaQueuePage() {
           <HelpLink topic="qa" />
         </Group>
         <Text size="sm" c="dimmed">
-          Cards nas colunas "Em teste" dos projetos em que você valida, do mais antigo ao mais
-          recente.
+          Cards nas colunas "Em teste" dos seus projetos, do mais antigo ao mais recente. Aprovar e
+          reprovar fica com QA, PO e gestor.
         </Text>
       </div>
       {queue.isError && (

@@ -63,7 +63,7 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Sidebar (à esquerda): Projetos, Mapa da equipe, Fila de testes, Notificações, Ajuda, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração.',
+              'Sidebar (à esquerda): Projetos, Mapa da equipe, Fila de testes, Notificações, Ajuda, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração. Cada seção recolhe ao clicar no título; o sistema lembra o que você deixou aberto e abre sozinho a seção da página atual.',
               'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil. Clique no seu nome ou na sua foto (no topo ou no rodapé da sidebar) para abrir a Minha área.',
               'Dentro de um projeto: as abas Board, Backlog e sprints, Casos de teste, Relatórios e Configurações.',
             ],

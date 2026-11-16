@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Avatar,
   Box,
+  Collapse,
   Group,
   NavLink,
   ScrollArea,
@@ -15,6 +16,7 @@ import {
   IconChartBar,
   IconChartDots,
   IconBuilding,
+  IconChevronDown,
   IconFileExport,
   IconHistory,
   IconLayoutKanban,
@@ -28,6 +30,8 @@ import {
   IconUsersGroup,
   type Icon,
 } from '@tabler/icons-react'
+import { useLocalStorage } from '@mantine/hooks'
+import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useProjects, type ProjectRole } from '@/features/projects/api'
 import { useReportTeams } from '@/features/team-reports/api'
@@ -138,6 +142,27 @@ export function Sidebar({
     ...(isAdmin ? [ADMIN] : []),
   ]
 
+  // Each section folds under its title. The choice is kept per browser; a
+  // section nobody touched starts open only if it is "Principal" or holds the
+  // current page, and navigating into a closed section opens it.
+  const [openSections, setOpenSections] = useLocalStorage<Record<string, boolean>>({
+    key: 'nexus-flow:sidebar-sections',
+    defaultValue: {},
+  })
+  const holdsActive = (section: NavSection) => section.items.some(active)
+  const isOpen = (section: NavSection) =>
+    openSections[section.title] ?? (section.title === MAIN.title || holdsActive(section))
+  const toggleSection = (section: NavSection) =>
+    setOpenSections((current) => ({ ...current, [section.title]: !isOpen(section) }))
+
+  const activeSection = sections.find(holdsActive)?.title
+  useEffect(() => {
+    if (!activeSection) return
+    setOpenSections((current) =>
+      current[activeSection] === false ? { ...current, [activeSection]: true } : current,
+    )
+  }, [pathname, activeSection, setOpenSections])
+
   const className = [
     'sidebar',
     collapsed && 'sidebar--collapsed',
@@ -163,38 +188,63 @@ export function Sidebar({
 
         <ScrollArea className="sidebar__nav" type="auto">
           <Stack gap="lg" py="md" px="sm" component="nav" aria-label="Menu principal">
-            {sections.map((section) => (
-              <Stack gap={4} key={section.title}>
-                {!collapsed && <Text className="sidebar__section-title">{section.title}</Text>}
-                {section.items.map((item) => {
-                  const isProject = section.title === 'Meus projetos'
-                  const link = (
-                    <NavLink
-                      key={item.to}
-                      component={Link}
-                      to={item.to}
-                      onClick={onCloseMobile}
-                      label={collapsed ? undefined : item.label}
-                      aria-label={collapsed ? item.label : undefined}
-                      leftSection={
-                        isProject && !collapsed ? (
-                          <span className="sidebar__project-key">{item.to.slice(3)}</span>
-                        ) : (
-                          <item.icon size={20} stroke={2} />
+            {sections.map((section) => {
+              const open = collapsed || isOpen(section)
+              const panelId = `sidebar-section-${section.title.replace(/\s+/g, '-').toLowerCase()}`
+              return (
+                <Stack gap={4} key={section.title}>
+                  {!collapsed && (
+                    <UnstyledButton
+                      className="sidebar__section-toggle"
+                      onClick={() => toggleSection(section)}
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                    >
+                      <Text component="span" className="sidebar__section-title">
+                        {section.title}
+                      </Text>
+                      <IconChevronDown
+                        size={14}
+                        stroke={2}
+                        className="sidebar__section-chevron"
+                        data-open={open || undefined}
+                      />
+                    </UnstyledButton>
+                  )}
+                  <Collapse expanded={open} id={panelId}>
+                    <Stack gap={4}>
+                      {section.items.map((item) => {
+                        const isProject = section.title === 'Meus projetos'
+                        const link = (
+                          <NavLink
+                            key={item.to}
+                            component={Link}
+                            to={item.to}
+                            onClick={onCloseMobile}
+                            label={collapsed ? undefined : item.label}
+                            aria-label={collapsed ? item.label : undefined}
+                            leftSection={
+                              isProject && !collapsed ? (
+                                <span className="sidebar__project-key">{item.to.slice(3)}</span>
+                              ) : (
+                                <item.icon size={20} stroke={2} />
+                              )
+                            }
+                            active={active(item)}
+                          />
                         )
-                      }
-                      active={active(item)}
-                    />
-                  )
-                  if (!collapsed) return link
-                  return (
-                    <Tooltip key={item.to} label={item.label} position="right" withArrow>
-                      {link}
-                    </Tooltip>
-                  )
-                })}
-              </Stack>
-            ))}
+                        if (!collapsed) return link
+                        return (
+                          <Tooltip key={item.to} label={item.label} position="right" withArrow>
+                            {link}
+                          </Tooltip>
+                        )
+                      })}
+                    </Stack>
+                  </Collapse>
+                </Stack>
+              )
+            })}
           </Stack>
         </ScrollArea>
 

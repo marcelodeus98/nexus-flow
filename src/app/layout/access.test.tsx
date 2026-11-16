@@ -62,6 +62,8 @@ function renderSidebar(isAdmin: boolean) {
 
 afterEach(() => setSession(null))
 
+// Sidebar sections fold (only "Principal" starts open), so links are looked
+// up with hidden: true — what matters is whether the menu offers them.
 describe('access by role', () => {
   it('shows "Novo projeto" only to admins', async () => {
     signIn('USER', [project('MANAGER')])
@@ -86,39 +88,51 @@ describe('access by role', () => {
   it('shows Exportações to who can see reports in some project', async () => {
     signIn('USER', [project('DEVELOPER')])
     renderSidebar(false)
-    expect(await screen.findByRole('link', { name: /Exportações/ })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: /Exportações/, hidden: true }),
+    ).toBeInTheDocument()
     // Everyone follows the testing queue.
-    expect(screen.getByRole('link', { name: /Fila de testes/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Fila de testes/, hidden: true })).toBeInTheDocument()
   })
 
   it('hides Exportações from viewers and people without projects', async () => {
     signIn('USER', [project('VIEWER')])
     renderSidebar(false)
     await screen.findByText('Nexa') // the projects loaded
-    expect(screen.queryByRole('link', { name: /Exportações/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Fila de testes/ })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /Exportações/, hidden: true }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Fila de testes/, hidden: true })).toBeInTheDocument()
   })
 
   it('gives admins the overview, team reports and exports', () => {
     signIn('ADMIN', [])
     renderSidebar(true)
-    expect(screen.getByRole('link', { name: /Visão geral/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Relatórios de equipe/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Exportações/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Visão geral/, hidden: true })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Relatórios de equipe/, hidden: true }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Exportações/, hidden: true })).toBeInTheDocument()
   })
 
   it('shows team reports and exports to a team leader, not the overview', async () => {
     signIn('USER', [project('VIEWER')], [{ id: 't1', name: 'Dev' }])
     renderSidebar(false)
-    expect(await screen.findByRole('link', { name: /Relatórios de equipe/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Exportações/ })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Visão geral/ })).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: /Relatórios de equipe/, hidden: true }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Exportações/, hidden: true })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /Visão geral/, hidden: true }),
+    ).not.toBeInTheDocument()
   })
 
   it('hides team reports from who leads no team', async () => {
     signIn('USER', [project('DEVELOPER')])
     renderSidebar(false)
-    await screen.findByRole('link', { name: /Exportações/ })
-    expect(screen.queryByRole('link', { name: /Relatórios de equipe/ })).not.toBeInTheDocument()
+    await screen.findByRole('link', { name: /Exportações/, hidden: true })
+    expect(
+      screen.queryByRole('link', { name: /Relatórios de equipe/, hidden: true }),
+    ).not.toBeInTheDocument()
   })
 })

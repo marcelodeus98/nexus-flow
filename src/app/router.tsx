@@ -138,6 +138,13 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'team-map',
+        // three.js only loads on this page.
+        lazy: async () => ({
+          Component: (await import('@/features/team-map/team-map-page')).TeamMapPage,
+        }),
+      },
+      {
         path: 'me',
         lazy: async () => ({
           Component: (await import('@/features/me/me-page')).MePage,

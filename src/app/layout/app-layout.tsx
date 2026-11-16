@@ -17,6 +17,7 @@ function pageLabel(pathname: string): string {
   if (first === 'exports') return 'Exportações'
   if (first === 'team-reports') return 'Relatórios de equipe'
   if (first === 'me') return 'Minha área'
+  if (first === 'team-map') return 'Mapa da equipe'
   if (first === 'overview') return 'Visão geral'
   if (first === 'qa') return 'Fila de testes'
   if (first === 'help') return 'Ajuda e treinamento'
@@ -29,6 +30,11 @@ function pageLabel(pathname: string): string {
 function isBoard(pathname: string): boolean {
   const [first, , third] = pathname.split('/').filter(Boolean)
   return first === 'p' && (third === undefined || third === 'b' || third === 'c')
+}
+
+// Screens that use the whole width: the board and the 3D team map.
+function isWide(pathname: string): boolean {
+  return isBoard(pathname) || pathname === '/team-map'
 }
 
 const initialsOf = (name: string) =>
@@ -85,7 +91,7 @@ export function AppLayout() {
         />
         <main className="app-layout__main">
           <div
-            className={`app-layout__page${isBoard(location.pathname) ? ' app-layout__page--wide' : ''}`}
+            className={`app-layout__page${isWide(location.pathname) ? ' app-layout__page--wide' : ''}`}
           >
             <Outlet />
           </div>

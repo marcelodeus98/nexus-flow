@@ -63,12 +63,28 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Sidebar (à esquerda): Projetos, Fila de testes, Notificações, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração.',
+              'Sidebar (à esquerda): Projetos, Mapa da equipe, Fila de testes, Notificações, Ajuda, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração.',
               'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil. Clique no seu nome ou na sua foto (no topo ou no rodapé da sidebar) para abrir a Minha área.',
               'Dentro de um projeto: as abas Board, Backlog e sprints, Casos de teste, Relatórios e Configurações.',
             ],
           },
           { tip: 'O botão de menu no topo recolhe a sidebar para ganhar espaço no board.' },
+        ],
+      },
+      {
+        q: 'O que é o Mapa da equipe?',
+        a: [
+          'Uma visão 3D do escritório: cada departamento é uma sala, e as pessoas ficam sentadas nas ilhas de mesa (estações de quatro lugares). A cor da pessoa e a tela do monitor mostram o que cada um está fazendo agora.',
+          {
+            list: [
+              'Verde-azulado, com a tela acesa pulsando: em foco (timer rodando).',
+              'Azul, com a tela azul e blocos flutuando: cards em andamento.',
+              'Cinza, com a tela apagada: sem nada em andamento. Cadeira vazia é lugar livre na ilha.',
+              'Bolinha vermelha: tem card atrasado. Anel dourado: você.',
+            ],
+          },
+          'Clique numa pessoa ou sala para a câmera ir até lá e abrir os detalhes: timer, cards em andamento, horas de hoje, cards abertos e atrasados. Os cartões do topo filtram por situação, e dá para buscar uma pessoa ou destacar um projeto.',
+          'Cada um vê conforme o seu papel: administradores veem todos; líderes de time e gestores de projeto veem as suas pessoas; os demais veem os colegas de projeto. Cards de projetos em que você não está aparecem só na contagem, sem o título.',
         ],
       },
       {

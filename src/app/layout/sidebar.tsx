@@ -20,6 +20,7 @@ import {
   IconLayoutKanban,
   IconLogout,
   IconMail,
+  IconMap,
   IconSchool,
   IconTags,
   IconTestPipe,
@@ -53,6 +54,7 @@ const MAIN: NavSection = {
   title: 'Principal',
   items: [
     { to: '/', label: 'Projetos', icon: IconLayoutKanban, end: true },
+    { to: '/team-map', label: 'Mapa da equipe', icon: IconMap },
     { to: '/qa', label: 'Fila de testes', icon: IconTestPipe },
     { to: '/settings/notifications', label: 'Notificações', icon: IconBell },
     { to: '/help', label: 'Ajuda e treinamento', icon: IconSchool },

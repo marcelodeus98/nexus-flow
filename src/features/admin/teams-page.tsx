@@ -5,6 +5,7 @@ import {
   Group,
   Modal,
   ScrollArea,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -12,7 +13,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { IconPlus, IconUsers } from '@tabler/icons-react'
+import { IconPlus, IconStar, IconUsers } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { confirmDanger } from '@/shared/notify/confirm'
@@ -36,7 +37,8 @@ export function TeamsPage() {
     <Stack gap="md">
       <Group justify="space-between" gap="md">
         <Text size="sm" c="dimmed">
-          Times agrupam pessoas para associá-las a projetos de uma vez.
+          Times agrupam pessoas para associá-las a projetos de uma vez. O líder acompanha os números
+          do time em Relatórios de equipe.
         </Text>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing(null)}>
           Novo time
@@ -58,6 +60,12 @@ export function TeamsPage() {
                   <IconUsers size={14} aria-hidden color="var(--nexa-slate)" />
                   <Text size="sm" c="dimmed">
                     {team.memberCount === 1 ? '1 pessoa' : `${team.memberCount} pessoas`}
+                  </Text>
+                </Group>
+                <Group gap={4}>
+                  <IconStar size={14} aria-hidden color="var(--nexa-slate)" />
+                  <Text size="sm" c="dimmed">
+                    {team.leader ? `Líder: ${team.leader.name}` : 'Sem líder'}
                   </Text>
                 </Group>
               </Stack>
@@ -96,12 +104,15 @@ function TeamDialog({ teamId, onClose }: { teamId?: string; onClose: () => void 
   const [name, setName] = useState<string>()
   const [description, setDescription] = useState<string>()
   const [memberIds, setMemberIds] = useState<Set<string>>()
+  // undefined: unchanged; null: no leader.
+  const [leaderId, setLeaderId] = useState<string | null>()
   const [filter, setFilter] = useState('')
 
   // Fields follow the loaded team until the admin edits them.
   const currentName = name ?? team.data?.name ?? ''
   const currentDescription = description ?? team.data?.description ?? ''
   const currentMembers = memberIds ?? new Set(team.data?.members.map((member) => member.id))
+  const currentLeader = leaderId === undefined ? (team.data?.leader?.id ?? null) : leaderId
   const visibleUsers = (users.data ?? []).filter((user) =>
     `${user.name} ${user.email}`.toLowerCase().includes(filter.trim().toLowerCase()),
   )
@@ -120,6 +131,7 @@ function TeamDialog({ teamId, onClose }: { teamId?: string; onClose: () => void 
         id: teamId,
         name: currentName.trim(),
         description: currentDescription.trim() || null,
+        ...(teamId && leaderId !== undefined && { leaderId }),
       })
       if (teamId && memberIds) {
         await setMembers.mutateAsync({ id: saved.id, userIds: [...memberIds] })
@@ -172,6 +184,20 @@ function TeamDialog({ teamId, onClose }: { teamId?: string; onClose: () => void 
           autosize
           minRows={2}
         />
+
+        {teamId && (
+          <Select
+            label="Líder"
+            description="Vê os relatórios do time: horas, entregas e qualidade de cada membro, em todos os projetos."
+            placeholder="Sem líder"
+            searchable
+            clearable
+            value={currentLeader}
+            onChange={setLeaderId}
+            nothingFoundMessage="Ninguém encontrado"
+            data={(users.data ?? []).map((user) => ({ value: user.id, label: user.name }))}
+          />
+        )}
 
         {teamId && (
           <Stack gap="xs" component="fieldset" style={{ border: 0, padding: 0, margin: 0 }}>

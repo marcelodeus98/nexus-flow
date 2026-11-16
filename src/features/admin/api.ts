@@ -45,6 +45,8 @@ export type TeamSummary = {
   id: string
   name: string
   description: string | null
+  // Follows the team's reports (Relatórios de equipe).
+  leader: { id: string; name: string } | null
   memberCount: number
 }
 
@@ -167,11 +169,19 @@ export function useDeleteDepartment() {
 
 export function useSaveTeam() {
   return useAdminMutation(
-    ({ id, ...input }: { id?: string; name: string; description: string | null }) =>
+    ({
+      id,
+      ...input
+    }: {
+      id?: string
+      name: string
+      description: string | null
+      leaderId?: string | null
+    }) =>
       id
         ? http<Team>(`/teams/${id}`, json('PATCH', input))
         : http<Team>('/teams', json('POST', input)),
-    [adminKeys.teams],
+    [adminKeys.teams, ['team-reports']],
   )
 }
 

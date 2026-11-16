@@ -63,7 +63,7 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Sidebar (à esquerda): Projetos, Fila de testes, Exportações (para quem pode ver relatórios), Notificações, seus projetos recentes e, para administradores, a Administração.',
+              'Sidebar (à esquerda): Projetos, Fila de testes, Notificações, Relatórios (Visão geral, Relatórios de equipe e Exportações, conforme o seu acesso), seus projetos recentes e, para administradores, a Administração.',
               'Barra do topo: busca de cards (Ctrl K), o timer em andamento, o status do sistema, o sino de notificações e o seu perfil.',
               'Dentro de um projeto: as abas Board, Backlog e sprints, Casos de teste, Relatórios e Configurações.',
             ],
@@ -585,7 +585,29 @@ export const topics: HelpTopic[] = [
               'Tempo para corrigir bug: da criação do bug até ele chegar a Concluído.',
             ],
           },
-          'Os números são sempre do projeto, do time ou da sprint, nunca por pessoa.',
+          'No relatório do projeto, os números são sempre do projeto ou da sprint, nunca por pessoa. Números por pessoa ficam só nos Relatórios de equipe, para o líder do time e os administradores.',
+        ],
+      },
+      {
+        q: 'Como funcionam os Relatórios de equipe?',
+        a: [
+          'Cada time pode ter um líder, definido por um administrador em Administração → Times. O líder vê o menu Relatórios de equipe com o trabalho dos membros do time em todos os projetos em que eles atuam, mesmo os projetos de que o líder não participa.',
+          {
+            list: [
+              'Resumo: horas, cards concluídos e pontos, estimado vs real, cards em aberto e atrasados, taxa de reprovação, aprovação de primeira, retrabalho e bugs.',
+              'Entregas por pessoa: horas, concluídos, estimado vs real e o que cada um tem em aberto hoje.',
+              'Qualidade por pessoa: aprovações e reprovações do QA nos cards de cada um, aprovação de primeira, retrabalho e bugs encontrados nos seus cards.',
+              'Validação e testes: o que cada membro aprovou, reprovou e testou, e os bugs que reportou (útil para times de QA).',
+              'Projetos e horas por dia.',
+            ],
+          },
+          'Filtre por período e por projeto, e exporte em Excel ou CSV. Só entra o trabalho dos membros: se o líder não for membro do time, o trabalho dele não é contado.',
+        ],
+      },
+      {
+        q: 'O que é a Visão geral?',
+        a: [
+          'É a visão macro dos administradores: todos os projetos ativos, times e pessoas lado a lado no período, com horas, entregas, cards em aberto e atrasados, bugs e taxa de reprovação. De cada time, um clique abre o relatório da equipe.',
         ],
       },
       {
@@ -627,7 +649,7 @@ export const topics: HelpTopic[] = [
           {
             list: [
               'Usuários: cadastro, papel no sistema (Administrador ou Usuário), departamento, troca de senha e desativação.',
-              'Departamentos e Times: os times agrupam pessoas para vincular a projetos de uma vez.',
+              'Departamentos e Times: os times agrupam pessoas para vincular a projetos de uma vez, e cada time pode ter um líder, que acompanha os Relatórios de equipe.',
               'Tags globais: tags que aparecem em todos os projetos.',
               'E-mail (SMTP): o servidor por onde saem as notificações por e-mail e os links de redefinição de senha.',
               'Auditoria: o registro de tudo o que foi feito no sistema, que não pode ser alterado nem apagado.',

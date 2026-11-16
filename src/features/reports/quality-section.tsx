@@ -225,7 +225,7 @@ function WeeklyChart({ weeks }: { weeks: QualityReport['weeks'] }) {
   )
 }
 
-function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
+export function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <Paper withBorder radius="md" p="md">
       <Text size="xs" c="dimmed">

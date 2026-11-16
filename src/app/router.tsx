@@ -138,6 +138,19 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'team-reports',
+        lazy: async () => ({
+          Component: (await import('@/features/team-reports/team-report-page')).TeamReportPage,
+        }),
+      },
+      {
+        path: 'overview',
+        loader: requireAdmin,
+        lazy: async () => ({
+          Component: (await import('@/features/team-reports/overview-page')).OverviewPage,
+        }),
+      },
+      {
         path: 'exports',
         lazy: async () => ({
           Component: (await import('@/features/reports/exports-page')).ExportsPage,

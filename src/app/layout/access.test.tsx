@@ -32,10 +32,15 @@ const project = (myRole: ProjectRole | null): ProjectListItem => ({
   myRole,
 })
 
-function signIn(globalRole: SessionUser['globalRole'], projects: ProjectListItem[]) {
+function signIn(
+  globalRole: SessionUser['globalRole'],
+  projects: ProjectListItem[],
+  ledTeams: { id: string; name: string }[] = [],
+) {
   setSession({ accessToken: 't', expiresIn: 900, user: user(globalRole) })
   mockApi(({ url = '' }) => {
     if (url.startsWith('/projects')) return [200, projects]
+    if (url.startsWith('/team-reports/teams')) return [200, ledTeams]
     throw new Error(`Unexpected request to ${url}`)
   })
 }
@@ -94,9 +99,26 @@ describe('access by role', () => {
     expect(screen.getByRole('link', { name: /Fila de testes/ })).toBeInTheDocument()
   })
 
-  it('shows Exportações to admins without projects', () => {
+  it('gives admins the overview, team reports and exports', () => {
     signIn('ADMIN', [])
     renderSidebar(true)
+    expect(screen.getByRole('link', { name: /Visão geral/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Relatórios de equipe/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Exportações/ })).toBeInTheDocument()
+  })
+
+  it('shows team reports and exports to a team leader, not the overview', async () => {
+    signIn('USER', [project('VIEWER')], [{ id: 't1', name: 'Dev' }])
+    renderSidebar(false)
+    expect(await screen.findByRole('link', { name: /Relatórios de equipe/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Exportações/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Visão geral/ })).not.toBeInTheDocument()
+  })
+
+  it('hides team reports from who leads no team', async () => {
+    signIn('USER', [project('DEVELOPER')])
+    renderSidebar(false)
+    await screen.findByRole('link', { name: /Exportações/ })
+    expect(screen.queryByRole('link', { name: /Relatórios de equipe/ })).not.toBeInTheDocument()
   })
 })

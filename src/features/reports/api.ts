@@ -29,7 +29,7 @@ export type ExportStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED'
 
 export type ExportItem = {
   id: string
-  kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL' | 'QUALITY'
+  kind: 'TIME_ENTRIES' | 'ESTIMATE_VS_ACTUAL' | 'QUALITY' | 'TEAM'
   format: 'CSV' | 'XLSX'
   status: ExportStatus
   rowCount: number | null

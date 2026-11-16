@@ -1,0 +1,11 @@
+.team-report__table {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Five options: let them wrap on narrow screens instead of overflowing. */
+.team-report__views {
+  align-self: flex-start;
+  max-width: 100%;
+  flex-wrap: wrap;
+}

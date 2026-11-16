@@ -4,10 +4,16 @@ import './hours-bars.css'
 // Hours per person/card/sprint/day as horizontal bars: one series, one hue,
 // bars thin and anchored left, the value at the tip in text colour. The
 // labels and values are the bars' own table, so nothing hides behind hover.
-export function HoursBars({ report }: { report: TimeReport }) {
+export function HoursBars({
+  report,
+  emptyText = 'Nenhuma hora registrada no período.',
+}: {
+  report: Pick<TimeReport, 'rows'>
+  emptyText?: string
+}) {
   const max = Math.max(...report.rows.map((row) => row.seconds), 1)
   if (report.rows.length === 0) {
-    return <p className="hours-bars__empty">Nenhuma hora registrada no período.</p>
+    return <p className="hours-bars__empty">{emptyText}</p>
   }
   return (
     <ul className="hours-bars" aria-label="Horas registradas">
@@ -23,9 +29,11 @@ export function HoursBars({ report }: { report: TimeReport }) {
               aria-hidden
             />
             <span className="hours-bars__value">{formatHours(row.seconds)}</span>
-            <span className="hours-bars__entries">
-              {row.entries} {row.entries === 1 ? 'lançamento' : 'lançamentos'}
-            </span>
+            {row.entries > 0 && (
+              <span className="hours-bars__entries">
+                {row.entries} {row.entries === 1 ? 'lançamento' : 'lançamentos'}
+              </span>
+            )}
           </span>
         </li>
       ))}

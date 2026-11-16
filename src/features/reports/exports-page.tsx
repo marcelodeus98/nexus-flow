@@ -16,6 +16,7 @@ const kindLabels: Record<ExportItem['kind'], string> = {
   TIME_ENTRIES: 'Horas registradas',
   ESTIMATE_VS_ACTUAL: 'Estimado vs real',
   QUALITY: 'Qualidade',
+  TEAM: 'Relatório de equipe',
 }
 
 const statusColors: Record<ExportStatus, string> = {

@@ -11,6 +11,8 @@ import {
 } from '@mantine/core'
 import {
   IconBell,
+  IconChartBar,
+  IconChartDots,
   IconBuilding,
   IconFileExport,
   IconHistory,
@@ -26,6 +28,7 @@ import {
 } from '@tabler/icons-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useProjects, type ProjectRole } from '@/features/projects/api'
+import { useReportTeams } from '@/features/team-reports/api'
 import { BrandIcon } from '@/shared/brand/brand-icon'
 import { BrandLogo } from '@/shared/brand/brand-logo'
 import './sidebar.css'
@@ -36,7 +39,7 @@ type NavSection = { title: string; items: NavItem[] }
 const EXPORTS: NavItem = { to: '/exports', label: 'Exportações', icon: IconFileExport }
 
 // Exports come from reports, so the link is for whoever can open one: every
-// project role but Leitor ('reports:view-own'), and admins.
+// project role but Leitor ('reports:view-own'), team leaders and admins.
 const REPORTING_ROLES: ReadonlySet<ProjectRole> = new Set([
   'MANAGER',
   'PRODUCT_OWNER',
@@ -55,9 +58,21 @@ const MAIN: NavSection = {
   ],
 }
 
-// Reports above a single project, under "Relatórios".
-function reportsSection(access: { canExport: boolean }): NavSection | null {
-  return access.canExport ? { title: 'Relatórios', items: [EXPORTS] } : null
+// Reports above a single project: the admin's overview, the team reports of
+// leaders (and admins) and the exports of whoever can produce them.
+function reportsSection(access: {
+  isAdmin: boolean
+  leadsTeam: boolean
+  canExport: boolean
+}): NavSection | null {
+  const items: NavItem[] = [
+    ...(access.isAdmin ? [{ to: '/overview', label: 'Visão geral', icon: IconChartDots }] : []),
+    ...(access.isAdmin || access.leadsTeam
+      ? [{ to: '/team-reports', label: 'Relatórios de equipe', icon: IconChartBar }]
+      : []),
+    ...(access.canExport ? [EXPORTS] : []),
+  ]
+  return items.length ? { title: 'Relatórios', items } : null
 }
 
 const ADMIN: NavSection = {
@@ -104,12 +119,15 @@ export function Sidebar({
     .filter((project) => project.status === 'ACTIVE')
     .slice(0, MAX_PROJECTS)
     .map((project) => ({ to: `/p/${project.key}`, label: project.name, icon: IconLayoutKanban }))
+  const teams = useReportTeams()
+  const leadsTeam = (teams.data ?? []).length > 0
   const canExport =
     isAdmin ||
+    leadsTeam ||
     (projects.data ?? []).some(
       (project) => project.myRole !== null && REPORTING_ROLES.has(project.myRole),
     )
-  const reports = reportsSection({ canExport })
+  const reports = reportsSection({ isAdmin, leadsTeam, canExport })
   const sections = [
     MAIN,
     ...(reports ? [reports] : []),

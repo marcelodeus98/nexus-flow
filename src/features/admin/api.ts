@@ -131,6 +131,15 @@ export function useSaveUser() {
   )
 }
 
+// Admins only, for someone else; `notify` e-mails the new password to them.
+export function useSetUserPassword() {
+  return useAdminMutation(
+    ({ id, ...input }: { id: string; password: string; notify: boolean }) =>
+      http<User>(`/users/${id}/password`, json('PUT', input)),
+    [adminKeys.users],
+  )
+}
+
 export function useSetUserStatus() {
   return useAdminMutation(
     ({ id, isActive }: { id: string; isActive: boolean }) =>

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setSession } from '@/shared/auth/session-store'
@@ -20,7 +20,24 @@ const ana: User = {
   createdAt: '2026-10-28T00:00:00.000Z',
 }
 
+const carla: User = {
+  ...ana,
+  id: 'u3',
+  name: 'Carla Dias',
+  email: 'carla@magistter.com.br',
+  globalRole: 'USER',
+}
+
 const renderPage = () => renderWithProviders(<UsersPage />)
+
+async function openEdit(name: string) {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText(name)
+  await user.click(screen.getByRole('button', { name: `Ações de ${name}` }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Editar' }))
+  return { user, dialog: await screen.findByRole('dialog') }
+}
 
 describe('UsersPage', () => {
   let users: User[]
@@ -28,8 +45,9 @@ describe('UsersPage', () => {
 
   beforeEach(() => {
     setSession({ accessToken: 't', expiresIn: 900, user: ana })
-    users = [ana]
+    users = [ana, carla]
     api = mockApi(({ url = '', method, data }) => {
+      if (url.endsWith('/password') && method === 'put') return [200, carla]
       if (url.startsWith('/users') && method === 'post') {
         const body = JSON.parse(String(data)) as Partial<User>
         const created = { ...ana, ...body, id: 'u2', department: null, globalRole: 'USER' as const }
@@ -44,12 +62,50 @@ describe('UsersPage', () => {
 
   afterEach(() => setSession(null))
 
+  const putRequest = () =>
+    waitFor(() => {
+      const call = api.mock.calls.find(([config]) => config.method === 'put')
+      expect(call).toBeDefined()
+      return call!
+    })
+
   it('lists users with department and role', async () => {
     renderPage()
 
     const row = (await screen.findByText('Ana Lima')).closest('tr')!
     expect(within(row).getByText('Desenvolvimento')).toBeInTheDocument()
     expect(within(row).getByText('Administrador')).toBeInTheDocument()
+  })
+
+  it('generates a password for another user and e-mails it', async () => {
+    const { user, dialog } = await openEdit('Carla Dias')
+    const save = within(dialog).getByRole('button', { name: /Salvar e enviar por e-mail/ })
+    expect(save).toBeDisabled()
+
+    await user.click(within(dialog).getByRole('button', { name: /Gerar/ }))
+    const input = within(dialog).getByLabelText(/Nova senha/) as HTMLInputElement
+    expect(input.value).toHaveLength(16)
+    expect(within(dialog).getByRole('button', { name: /Copiar senha/ })).toBeEnabled()
+
+    await user.click(save)
+    const put = await putRequest()
+    expect(put[0].url).toBe('/users/u3/password')
+    expect(JSON.parse(String(put[0].data))).toEqual({ password: input.value, notify: true })
+  })
+
+  it('saves a typed password without e-mail', async () => {
+    const { user, dialog } = await openEdit('Carla Dias')
+    await user.type(within(dialog).getByLabelText(/Nova senha/), 'senha-digitada')
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar senha' }))
+
+    const put = await putRequest()
+    expect(JSON.parse(String(put[0].data))).toEqual({ password: 'senha-digitada', notify: false })
+  })
+
+  it('does not offer to change your own password here', async () => {
+    const { dialog } = await openEdit('Ana Lima')
+    expect(within(dialog).queryByLabelText(/Nova senha/)).not.toBeInTheDocument()
+    expect(within(dialog).getByText(/Esqueci minha senha/)).toBeInTheDocument()
   })
 
   it('creates a user and refreshes the list', async () => {

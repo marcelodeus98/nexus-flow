@@ -64,6 +64,7 @@ const API_ACTIONS = [
   'user.activated',
   'user.created',
   'user.deactivated',
+  'user.password_changed',
   'user.updated',
 ]
 

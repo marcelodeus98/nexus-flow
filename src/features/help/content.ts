@@ -625,7 +625,7 @@ export const topics: HelpTopic[] = [
         a: [
           {
             list: [
-              'Usuários: cadastro, papel no sistema (Administrador ou Usuário), departamento e desativação.',
+              'Usuários: cadastro, papel no sistema (Administrador ou Usuário), departamento, troca de senha e desativação.',
               'Departamentos e Times: os times agrupam pessoas para vincular a projetos de uma vez.',
               'Tags globais: tags que aparecem em todos os projetos.',
               'E-mail (SMTP): o servidor por onde saem as notificações por e-mail e os links de redefinição de senha.',
@@ -640,6 +640,7 @@ export const topics: HelpTopic[] = [
         a: [
           'Na tela de login, clique em "Esqueci minha senha" e informe seu e-mail: chega um link válido por 1 hora para definir uma nova. Se o e-mail não chegar, peça a um administrador.',
           'O acesso é sempre com e-mail e senha. Quem é cadastrado sem senha inicial define a sua pelo "Esqueci minha senha".',
+          'Um administrador também pode definir uma nova senha para você em Administração → Usuários: digitada ou gerada automaticamente, ela pode ser enviada para o seu e-mail. A troca encerra todas as suas sessões abertas.',
         ],
       },
       {

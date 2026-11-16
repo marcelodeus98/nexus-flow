@@ -1,5 +1,6 @@
 import {
   Button,
+  Divider,
   Group,
   Modal,
   PasswordInput,
@@ -13,6 +14,7 @@ import { useState, type FormEvent } from 'react'
 import { apiErrorMessage } from '@/shared/api/errors'
 import { toast } from '@/shared/notify/toast'
 import { useDepartments, useSaveUser, type GlobalRole, type User } from './api'
+import { UserPasswordSection } from './user-password-section'
 
 const roleOptions = [
   { value: 'USER', label: 'Usuário' },
@@ -63,7 +65,12 @@ export function UserDialog({
   }
 
   return (
-    <Modal opened onClose={onClose} title={user ? 'Editar usuário' : 'Novo usuário'}>
+    <Modal
+      opened
+      onClose={onClose}
+      title={user ? 'Editar usuário' : 'Novo usuário'}
+      size={user ? 'lg' : 'md'}
+    >
       <Stack component="form" gap="md" onSubmit={submit}>
         <Text size="sm" c="dimmed">
           {user
@@ -97,6 +104,8 @@ export function UserDialog({
           <Select
             label="Papel"
             description={isSelf ? 'Você não pode mudar o próprio papel.' : undefined}
+            // Below the field, so it lines up with Departamento.
+            inputWrapperOrder={['label', 'input', 'description', 'error']}
             value={globalRole}
             onChange={(value) => value && setGlobalRole(value as GlobalRole)}
             disabled={isSelf}
@@ -124,6 +133,18 @@ export function UserDialog({
           </Button>
         </Group>
       </Stack>
+      {user && (
+        <>
+          <Divider my="lg" label="Trocar senha" labelPosition="left" />
+          {isSelf ? (
+            <Text size="sm" c="dimmed">
+              Para trocar a sua própria senha, use &quot;Esqueci minha senha&quot; na tela de login.
+            </Text>
+          ) : (
+            <UserPasswordSection user={user} />
+          )}
+        </>
+      )}
     </Modal>
   )
 }
